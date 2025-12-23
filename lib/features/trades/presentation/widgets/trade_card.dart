@@ -5,49 +5,83 @@ import '../models/trade_ui_model.dart';
 class TradeCard extends StatelessWidget {
   final TradeUiModel trade;
 
-  const TradeCard({
-    super.key,
-    required this.trade,
-  });
+  const TradeCard({super.key, required this.trade});
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+
     final bool isProfit = trade.pnlValue >= 0;
+    final bool isR1Booked = trade.isR1Booked;
+
+    final Color r1Color = isR1Booked ? Colors.green : Colors.grey;
+
+    final double r1TargetPrice = trade.buyPrice + trade.oneRTarget;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ───────────────── 1️⃣ NAME + STATUS ─────────────────
+            // ───────────────── Row 1: Status | Name | 🎯 Target ─────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  trade.name,
-                  style: textTheme.titleMedium,
+                Row(
+                  children: [
+                    _StatusIcon(status: trade.status),
+                    const SizedBox(width: 6),
+                    Text(trade.name, style: textTheme.titleSmall),
+                  ],
                 ),
-                _StatusBadge(status: trade.status),
+                GestureDetector(
+                  onTap: () => _showR1Info(context),
+                  child: Opacity(
+                    opacity: isR1Booked ? 1.0 : 0.4,
+                    child: Row(
+                      children: [
+                        Text(
+                          '🎯',
+                          style: TextStyle(fontSize: 18, color: r1Color),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          r1TargetPrice.toStringAsFixed(0),
+                          style: textTheme.bodySmall!.copyWith(
+                            color: r1Color,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
 
-            // ───────────────── 2️⃣ P&L ─────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // ───────────────── Row 2: Qty | Buy | SL ─────────────────
+            _InlineRow(
               children: [
+                _inlineText('Qty', trade.quantity),
+                _inlineText('Buy', trade.buyPrice),
+                _inlineText('SL', trade.stopLoss),
+              ],
+            ),
+
+            const SizedBox(height: 6),
+
+            // ───────────────── Row 3: Invested | P&L ─────────────────
+            _InlineRow(
+              children: [
+                _inlineText('Inv', trade.investedAmount, prefix: '₹'),
                 Text(
-                  'P&L',
-                  style: textTheme.bodySmall,
-                ),
-                Text(
-                  '${_sign(trade.pnlValue)}₹${trade.pnlValue.abs().toStringAsFixed(0)} '
-                  '(${_sign(trade.pnlPercent)}${trade.pnlPercent.abs().toStringAsFixed(2)}%)',
-                  style: textTheme.bodyLarge!.copyWith(
+                  'P&L: ${trade.pnlValue.toStringAsFixed(0)} '
+                  '(${trade.pnlPercent.toStringAsFixed(1)}%)',
+                  style: textTheme.bodySmall!.copyWith(
                     color: isProfit ? AppTheme.success : AppTheme.danger,
                     fontWeight: FontWeight.w600,
                   ),
@@ -55,76 +89,16 @@ class TradeCard extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
 
-            // ───────────────── 3️⃣ QTY / 25% / BUY ─────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // ───────────────── Row 4: Age | Init SL ─────────────────
+            _InlineRow(
               children: [
-                _InfoText(label: 'Qty', value: trade.quantity.toString()),
-                _InfoText(label: '25%', value: trade.partialQuantity.toString()),
-                _InfoText(
-                  label: 'Buy',
-                  value: trade.buyPrice.toStringAsFixed(0),
+                _inlineText('Age', '${trade.ageInDays}d'),
+                _inlineText(
+                  'Init SL',
+                  trade.initialStopLoss.toStringAsFixed(0),
                 ),
-              ],
-            ),
-
-            const SizedBox(height: 8),
-
-            // ───────────────── 4️⃣ INVESTED / SL / INIT SL ─────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _InfoText(
-                  label: 'Inv',
-                  value: '₹${trade.investedAmount.toStringAsFixed(0)}',
-                ),
-                _InfoText(
-                  label: 'SL',
-                  value: trade.stopLoss.toStringAsFixed(0),
-                  valueColor: AppTheme.danger,
-                ),
-                _InfoText(
-                  label: 'Init SL',
-                  value: trade.initialStopLoss.toStringAsFixed(0),
-                  valueColor: Colors.grey,
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 8),
-
-            // ───────────────── 5️⃣ META (1R / AGE / PARTIAL) ─────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '1R: ₹${trade.oneRTarget.toStringAsFixed(0)}',
-                  style: textTheme.bodySmall,
-                ),
-                Text(
-                  'Age: ${trade.ageInDays}d',
-                  style: textTheme.bodySmall,
-                ),
-                if (trade.isPartialProfitBooked)
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.done_all,
-                        size: 14,
-                        color: AppTheme.success,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Partial',
-                        style: textTheme.bodySmall!.copyWith(
-                          color: AppTheme.success,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
               ],
             ),
           ],
@@ -133,81 +107,87 @@ class TradeCard extends StatelessWidget {
     );
   }
 
-  String _sign(double value) => value >= 0 ? '+' : '-';
-}
+  // ───────────────── R1 Info Popup ─────────────────
+  void _showR1Info(BuildContext context) {
+    final double targetPrice = trade.buyPrice + trade.oneRTarget;
 
-// ───────────────────────── INFO TEXT ─────────────────────────
+    final int partialQty = (trade.quantity * 0.25).floor();
 
-class _InfoText extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
+    final double bookedProfit = trade.oneRTarget * partialQty;
 
-  const _InfoText({
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: textTheme.bodySmall,
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Target Details'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Target Price: ₹${targetPrice.toStringAsFixed(0)}'),
+            Text('1R (Risk): ₹${trade.oneRTarget.toStringAsFixed(0)}'),
+            Text('25% Qty: $partialQty'),
+            const SizedBox(height: 6),
+            Text(
+              'Profit: ₹${bookedProfit.toStringAsFixed(0)}',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.green,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: textTheme.bodyMedium!.copyWith(
-            color: valueColor,
-            fontWeight: FontWeight.w500,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
           ),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  // ───────────────── Inline label:value ─────────────────
+  Widget _inlineText(String label, dynamic value, {String prefix = ''}) {
+    if (value == null) return const SizedBox.shrink();
+
+    return Text('$label: $prefix$value', style: const TextStyle(fontSize: 12));
   }
 }
 
-// ───────────────────────── STATUS BADGE ─────────────────────────
+// ───────────────── Helper Widgets ─────────────────
 
-class _StatusBadge extends StatelessWidget {
-  final TradeStatus status;
+class _InlineRow extends StatelessWidget {
+  final List<Widget> children;
 
-  const _StatusBadge({required this.status});
+  const _InlineRow({required this.children});
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    return Wrap(spacing: 12, runSpacing: 4, children: children);
+  }
+}
 
-    late final String text;
-    late final Color color;
+class _StatusIcon extends StatelessWidget {
+  final TradeStatus status;
+
+  const _StatusIcon({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    Color color;
 
     switch (status) {
       case TradeStatus.active:
-        text = 'Active';
-        color = Colors.orange;
+        color = Colors.green;
         break;
       case TradeStatus.free:
-        text = 'Free';
-        color = AppTheme.success;
+        color = Colors.blue;
         break;
       case TradeStatus.closed:
-        text = 'Closed';
         color = Colors.grey;
         break;
     }
 
-    return Text(
-      text,
-      style: textTheme.bodySmall!.copyWith(
-        color: color,
-        fontWeight: FontWeight.w600,
-      ),
-    );
+    return Icon(Icons.circle, size: 10, color: color);
   }
 }

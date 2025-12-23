@@ -49,7 +49,7 @@ class TradeFirestoreDto {
       initialStopLoss: initialStopLoss,
       oneRTarget: oneRTarget,
       ageInDays: ageInDays,
-      isPartialProfitBooked:
+      isR1Booked:
           (data['isPartialProfitBooked'] as bool?) ?? false,
     );
   }

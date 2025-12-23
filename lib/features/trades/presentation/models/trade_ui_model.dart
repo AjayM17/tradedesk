@@ -26,7 +26,7 @@ class TradeUiModel {
 
   // ── Meta
   final int ageInDays;
-  final bool isPartialProfitBooked;
+  final bool isR1Booked;
 
   const TradeUiModel({
     required this.name,
@@ -41,6 +41,6 @@ class TradeUiModel {
     required this.initialStopLoss,
     required this.oneRTarget,
     required this.ageInDays,
-    required this.isPartialProfitBooked,
+    required this.isR1Booked,
   });
 }
