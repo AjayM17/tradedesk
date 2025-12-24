@@ -34,6 +34,7 @@ class TradeFirestoreDto {
         DateTime.now().difference(tradeDate).inDays;
 
     return TradeUiModel(
+      id:id,
       name: data['name'] as String,
       status: TradeStatus.values.firstWhere(
         (e) => e.name == data['status'],
@@ -49,6 +50,7 @@ class TradeFirestoreDto {
       initialStopLoss: initialStopLoss,
       oneRTarget: oneRTarget,
       ageInDays: ageInDays,
+      tradeDate:tradeDate,
       isR1Booked:
           (data['isPartialProfitBooked'] as bool?) ?? false,
     );

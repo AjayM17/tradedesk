@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trade_desk/features/trades/presentation/screens/create_trade_screen.dart';
 
 import '../../data/services/trade_firestore_service.dart';
 import '../models/trade_ui_model.dart';
@@ -10,13 +11,14 @@ class TradesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Trades'),
-      ),
+      appBar: AppBar(title: const Text('My Trades')),
       body: const TradesBody(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // TODO: Navigate to Create Trade screen (v2)
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CreateTradeScreen()),
+          );
         },
         child: const Icon(Icons.add),
       ),
@@ -36,9 +38,7 @@ class TradesBody extends StatelessWidget {
       builder: (context, snapshot) {
         // 1️⃣ Loading state
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         }
 
         // 2️⃣ Error state
@@ -59,9 +59,7 @@ class TradesBody extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           itemCount: trades.length,
           itemBuilder: (context, index) {
-            return TradeCard(
-              trade: trades[index],
-            );
+            return TradeCard(trade: trades[index]);
           },
         );
       },
@@ -80,21 +78,11 @@ class TradesEmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.show_chart,
-            size: 64,
-            color: Colors.grey,
-          ),
+          const Icon(Icons.show_chart, size: 64, color: Colors.grey),
           const SizedBox(height: 16),
-          Text(
-            'No trades yet',
-            style: textTheme.titleMedium,
-          ),
+          Text('No trades yet', style: textTheme.titleMedium),
           const SizedBox(height: 8),
-          Text(
-            'Tap + to add your first trade',
-            style: textTheme.bodySmall,
-          ),
+          Text('Tap + to add your first trade', style: textTheme.bodySmall),
         ],
       ),
     );

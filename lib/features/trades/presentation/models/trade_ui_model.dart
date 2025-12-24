@@ -5,30 +5,24 @@ enum TradeStatus {
 }
 
 class TradeUiModel {
-  // ── Identity
+  final String id;
   final String name;
   final TradeStatus status;
-
-  // ── Position
   final int quantity;
-  final int partialQuantity; // 25% qty
+  final int partialQuantity;
   final double investedAmount;
-
-  // ── Performance
-  final double pnlValue; // ₹
-  final double pnlPercent; // %
-
-  // ── Prices & Risk
+  final double pnlValue;
+  final double pnlPercent;
   final double buyPrice;
   final double stopLoss;
   final double initialStopLoss;
   final double oneRTarget;
-
-  // ── Meta
   final int ageInDays;
   final bool isR1Booked;
+  final DateTime tradeDate; // ✅ ADD THIS
 
-  const TradeUiModel({
+  TradeUiModel({
+    required this.id,
     required this.name,
     required this.status,
     required this.quantity,
@@ -42,5 +36,6 @@ class TradeUiModel {
     required this.oneRTarget,
     required this.ageInDays,
     required this.isR1Booked,
+    required this.tradeDate, // ✅
   });
 }
