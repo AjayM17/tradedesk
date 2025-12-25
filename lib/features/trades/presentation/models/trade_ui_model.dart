@@ -1,3 +1,5 @@
+import 'package:trade_desk/features/trades/data/models/r1_booking.dart';
+
 enum TradeStatus {
   active,
   free,
@@ -18,8 +20,8 @@ class TradeUiModel {
   final double initialStopLoss;
   final double oneRTarget;
   final int ageInDays;
-  final bool isR1Booked;
-  final DateTime tradeDate; // ✅ ADD THIS
+  final DateTime tradeDate; 
+  final R1Booking? r1;
 
   TradeUiModel({
     required this.id,
@@ -35,7 +37,12 @@ class TradeUiModel {
     required this.initialStopLoss,
     required this.oneRTarget,
     required this.ageInDays,
-    required this.isR1Booked,
-    required this.tradeDate, // ✅
+    required this.tradeDate,
+    required this.r1,
   });
+
+  int get remainingQuantity {
+  if (r1 == null) return quantity;
+  return quantity - r1!.quantity;
+}
 }

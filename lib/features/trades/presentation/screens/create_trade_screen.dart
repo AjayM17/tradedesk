@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:trade_desk/features/stocks/data/stock_service.dart';
-import 'package:trade_desk/features/stocks/models/stock.dart';
 import 'package:trade_desk/features/trades/data/models/trade_dto.dart';
 import 'package:trade_desk/features/trades/data/services/trade_firestore_service.dart';
 import 'package:trade_desk/features/trades/data/services/trade_service.dart';
@@ -15,14 +13,14 @@ class CreateTradeScreen extends StatefulWidget {
 }
 
 class _CreateTradeScreenState extends State<CreateTradeScreen> {
-  // Temporary limits (will come from Settings later)
-  static const double maxInvestValue = 200000; // ₹2L
-  static const double maxRiskValue = 5000; // ₹5k
-  final _stockCtrl = TextEditingController();
+  // Limits (later from settings)
+  static const double maxInvestValue = 200000;
+  static const double maxRiskValue = 5000;
 
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
+  final _stockCtrl = TextEditingController();
   final _entryCtrl = TextEditingController();
   final _slCtrl = TextEditingController();
   final _initSlCtrl = TextEditingController();
@@ -30,20 +28,27 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
 
   DateTime _tradeDate = DateTime.now();
   String _status = 'active';
-
-  /// Stores FULL symbol internally (e.g. TCS.NS / TCS.BO)
   String? _selectedStock;
 
-  // ───────── Calculations ─────────
+  bool _isSaving = false;
+  bool updateInitialSl = false;
 
+  // Original values (edit mode)
+  late double _oEntry;
+  late double _oSl;
+  late double _oInitSl;
+  late int _oQty;
+
+  bool get isEditMode => widget.trade != null;
+
+  // ───────── Calculations ─────────
   double get entry => double.tryParse(_entryCtrl.text) ?? 0;
   double get sl => double.tryParse(_slCtrl.text) ?? 0;
+  double get initialSl => double.tryParse(_initSlCtrl.text) ?? 0;
   int get qty => int.tryParse(_qtyCtrl.text) ?? 0;
 
   double get investment => entry * qty;
-  double get riskValue => (entry - sl) * qty;
-  double get riskPercent =>
-      investment == 0 ? 0 : (riskValue / investment) * 100;
+  double get riskValue => (entry - sl).abs() * qty;
 
   bool get isSaveEnabled =>
       _selectedStock != null &&
@@ -52,21 +57,6 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
       investment <= maxInvestValue &&
       riskValue <= maxRiskValue;
 
-  bool _isSearching = false;
-  bool _isSaving = false;
-  bool get isEditMode => widget.trade != null;
-
-  @override
-  void dispose() {
-    _stockCtrl.dispose();
-    _entryCtrl.dispose();
-    _slCtrl.dispose();
-    _initSlCtrl.dispose();
-    _qtyCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
   @override
   void initState() {
     super.initState();
@@ -84,52 +74,67 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
 
       _status = t.status.name;
       _tradeDate = t.tradeDate;
+
+      // Store originals
+      _oEntry = t.buyPrice;
+      _oSl = t.stopLoss;
+      _oInitSl = t.initialStopLoss;
+      _oQty = t.quantity;
     }
+  }
+
+  @override
+  void dispose() {
+    _stockCtrl.dispose();
+    _entryCtrl.dispose();
+    _slCtrl.dispose();
+    _initSlCtrl.dispose();
+    _qtyCtrl.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Trade')),
+      appBar: AppBar(
+        title: Text(isEditMode ? 'Edit Trade' : 'Add Trade'),
+      ),
       body: Form(
         key: _formKey,
         onChanged: () => setState(() {}),
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            _stockSearch(),
+            _stockField(),
             _datePicker(),
             _statusDropdown(),
 
             _numberField(_entryCtrl, 'Entry Price'),
+            _numberField(_slCtrl, 'Stop Loss'),
+
+            _initialSlToggle(),
             _numberField(
-              _slCtrl,
-              'Stop Loss',
-              onChanged: (v) => _initSlCtrl.text = v,
+              _initSlCtrl,
+              'Initial Stop Loss',
+              enabled: updateInitialSl,
             ),
-            _numberField(_initSlCtrl, 'Initial Stop Loss'),
+
             _numberField(_qtyCtrl, 'Quantity'),
 
             const SizedBox(height: 16),
-
-            _infoRow('Investment', investment),
-            _infoRow('Risk Value', riskValue),
-            _infoRow('Risk %', riskPercent, isPercent: true),
+            _info('Investment', investment),
+            _info('Risk Value', riskValue),
 
             const SizedBox(height: 24),
-
             ElevatedButton(
               onPressed: isSaveEnabled && !_isSaving ? _save : null,
               child: _isSaving
                   ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Save Trade'),
+                  : Text(isEditMode ? 'Update Trade' : 'Save Trade'),
             ),
           ],
         ),
@@ -139,147 +144,44 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
 
   // ───────── Widgets ─────────
 
-  Widget _stockSearch() {
+  Widget _stockField() {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         controller: _stockCtrl,
         decoration: const InputDecoration(
           labelText: 'Stock Name',
-          hintText: 'Enter stock name',
           border: OutlineInputBorder(),
         ),
-        onChanged: (value) {
-          _selectedStock = value.trim().isEmpty ? null : value.trim();
+        onChanged: (v) {
+          _selectedStock = v.trim().isEmpty ? null : v.trim();
           setState(() {});
         },
-        validator: (value) {
-          if (value == null || value.trim().isEmpty) {
-            return 'Stock name is required';
-          }
-          return null;
-        },
-      ),
-    );
-  }
-
-  Widget _stockSearchOld() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Autocomplete<Stock>(
-        displayStringForOption: (s) => s.symbol.split('.').first,
-        optionsBuilder: (TextEditingValue text) async {
-          if (text.text.isEmpty) {
-            return const <Stock>[];
-          }
-
-          setState(() => _isSearching = true);
-
-          final results = await StockService.search(text.text);
-
-          setState(() => _isSearching = false);
-
-          return results;
-        },
-        onSelected: (stock) {
-          setState(() {
-            _selectedStock = stock.symbol;
-          });
-        },
-        fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-          return TextFormField(
-            controller: controller,
-            focusNode: focusNode,
-            decoration: InputDecoration(
-              labelText: 'Stock Name',
-              hintText: 'Search & select stock',
-              border: const OutlineInputBorder(),
-              suffixIcon: _isSearching
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : null,
-            ),
-            onChanged: (value) {
-              if (value != _selectedStock) {
-                _selectedStock = null;
-              }
-              setState(() {});
-            },
-            validator: (_) =>
-                _selectedStock == null ? 'Select stock from list' : null,
-          );
-        },
-        optionsViewBuilder: (context, onSelected, options) {
-          return Align(
-            alignment: Alignment.topLeft,
-            child: Material(
-              elevation: 4,
-              borderRadius: BorderRadius.circular(6),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 250),
-                child: _isSearching
-                    ? const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                    : options.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text('No results found'),
-                      )
-                    : ListView.builder(
-                        padding: EdgeInsets.zero,
-                        itemCount: options.length,
-                        itemBuilder: (_, i) {
-                          final stock = options.elementAt(i);
-                          return ListTile(
-                            dense: true,
-                            title: Text(stock.symbol.split('.').first),
-                            subtitle: Text(
-                              stock.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            onTap: () => onSelected(stock),
-                          );
-                        },
-                      ),
-              ),
-            ),
-          );
-        },
+        validator: (v) =>
+            v == null || v.trim().isEmpty ? 'Required' : null,
       ),
     );
   }
 
   Widget _datePicker() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        title: const Text('Trade Date'),
-        subtitle: Text(
-          '${_tradeDate.year}-${_tradeDate.month.toString().padLeft(2, '0')}-${_tradeDate.day.toString().padLeft(2, '0')}',
-        ),
-        trailing: const Icon(Icons.calendar_today),
-        onTap: () async {
-          final picked = await showDatePicker(
-            context: context,
-            initialDate: _tradeDate,
-            firstDate: DateTime(2020),
-            lastDate: DateTime.now().add(const Duration(days: 365)),
-          );
-          if (picked != null) {
-            setState(() => _tradeDate = picked);
-          }
-        },
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: const Text('Trade Date'),
+      subtitle: Text(
+        '${_tradeDate.year}-${_tradeDate.month.toString().padLeft(2, '0')}-${_tradeDate.day.toString().padLeft(2, '0')}',
       ),
+      trailing: const Icon(Icons.calendar_today),
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: _tradeDate,
+          firstDate: DateTime(2020),
+          lastDate: DateTime.now(),
+        );
+        if (picked != null) {
+          setState(() => _tradeDate = picked);
+        }
+      },
     );
   }
 
@@ -302,91 +204,113 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
     );
   }
 
+  Widget _initialSlToggle() {
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      title: const Text('Update Initial Stop Loss'),
+      value: updateInitialSl,
+      onChanged: (v) {
+        setState(() => updateInitialSl = v);
+      },
+    );
+  }
+
   Widget _numberField(
     TextEditingController controller,
     String label, {
-    void Function(String)? onChanged,
+    bool enabled = true,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         controller: controller,
+        enabled: enabled,
         keyboardType: TextInputType.number,
         decoration: InputDecoration(
           labelText: label,
           border: const OutlineInputBorder(),
         ),
-        onChanged: (v) {
-          onChanged?.call(v);
-          setState(() {});
-        },
         validator: (v) => v == null || v.isEmpty ? 'Required' : null,
       ),
     );
   }
 
-  Widget _infoRow(String label, double value, {bool isPercent = false}) {
+  Widget _info(String label, double value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Text(
-        '$label: ${value.toStringAsFixed(2)}${isPercent ? '%' : ''}',
+        '$label: ${value.toStringAsFixed(2)}',
         style: const TextStyle(fontWeight: FontWeight.w600),
       ),
     );
   }
 
-  void _save() async {
+  // ───────── SAVE LOGIC ─────────
+
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isSaving = true);
+    final bool hasR1 = widget.trade?.r1 != null;
 
-    final tradeData = {
-      'name': _selectedStock!.split('.').first,
-      'symbol': _selectedStock!,
-      'entryprice': entry,
-      'stoploss': sl,
-      'initial_stoploss': double.tryParse(_initSlCtrl.text) ?? sl,
-      'quantity': qty,
-      'status': _status,
-      'trade_date':
-          '${_tradeDate.year}-${_tradeDate.month.toString().padLeft(2, '0')}-${_tradeDate.day.toString().padLeft(2, '0')}',
-    };
+    final bool breakingChange = hasR1 &&
+        (entry != _oEntry ||
+            sl != _oSl ||
+            qty != _oQty ||
+            (updateInitialSl && initialSl != _oInitSl));
 
-    try {
-      if (isEditMode) {
-        await TradeFirestoreService().updateTrade(widget.trade!.id, tradeData);
-      } else {
-        final trade = TradeDTO(
-          name: _selectedStock!.split('.').first,
-          symbol: _selectedStock!,
-          entryPrice: entry,
-          stopLoss: sl,
-          initialStopLoss: double.tryParse(_initSlCtrl.text) ?? sl,
-          quantity: qty,
-          status: _status,
-          tradeDate:
-              '${_tradeDate.year}-${_tradeDate.month.toString().padLeft(2, '0')}-${_tradeDate.day.toString().padLeft(2, '0')}',
-        );
-
-        await TradeService.addTrade(trade);
-      }
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isEditMode
-                ? 'Trade updated successfully'
-                : 'Trade saved successfully',
+    if (breakingChange) {
+      final bool? confirm = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('R1 will be cleared'),
+          content: const Text(
+            'You changed trade parameters that affect R1.\n\n'
+            'Continuing will clear R1 execution.\n\n'
+            'Do you want to continue?',
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Continue'),
+            ),
+          ],
         ),
       );
 
-      Navigator.pop(context);
-    } catch (e) {
+      if (confirm != true) return;
+    }
+
+    setState(() => _isSaving = true);
+
+    final dto = TradeDTO(
+      name: _selectedStock!.split('.').first,
+      symbol: _selectedStock!,
+      entryPrice: entry,
+      stopLoss: sl,
+      initialStopLoss: initialSl,
+      quantity: qty,
+      status: _status,
+      tradeDate:
+          '${_tradeDate.year}-${_tradeDate.month.toString().padLeft(2, '0')}-${_tradeDate.day.toString().padLeft(2, '0')}',
+    );
+
+    try {
+      if (isEditMode) {
+        await TradeFirestoreService().updateTrade(
+          tradeId: widget.trade!.id,
+          trade: dto,
+          clearR1: breakingChange,
+        );
+      } else {
+        await TradeService.addTrade(dto);
+      }
+
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      Navigator.pop(context);
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
