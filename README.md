@@ -5,11 +5,11 @@ Tagline:
 No Rule, No Trade
 
 Trading Engine is a rule-based positional trading app focused on capital protection, discipline, and consistency.
-V1 is intentionally minimal and opinionated — built for real trading, not dashboards.
+V1 is intentionally minimal and opinionated — built for real trading, not dashboards or vanity metrics.
 
 🎯 Purpose of V1
 
-V1 exists to answer one question:
+V1 exists to answer one core question:
 
 Can a trader strictly follow predefined rules with the help of software?
 
@@ -36,7 +36,7 @@ If rules are not met → No Trade
 ✅ Features Included in V1
 1️⃣ Trade Management
 
-Add, edit, delete trades
+Add, edit, and delete trades
 
 Mandatory stop-loss
 
@@ -44,7 +44,7 @@ Quantity-based position sizing
 
 Trade age tracking
 
-Status handling (currently Active only)
+Status handling (Active only in V1)
 
 2️⃣ Risk & Capital Rules (Strictly Enforced)
 
@@ -52,7 +52,7 @@ Risk per trade (%)
 
 Max capital per stock (%)
 
-Portfolio risk cap (≤ 6%)
+Portfolio risk cap ≤ 6%
 
 Stop-loss cannot be bypassed
 
@@ -99,6 +99,37 @@ No clutter, no charts
 All critical trade data visible at a glance
 
 Consistent, distraction-free layout
+
+---
+
+## 📸 Screenshots (V1)
+
+### Trades Screen
+Shows active positional trades with risk, P&L, and R1 status.
+
+![Trades Screen](screenshots/trades_screen.png)
+
+---
+
+### Add / Edit Trade
+Rule-enforced trade creation with mandatory stop-loss and risk validation.
+
+![Add Trade](screenshots/add_trade.png)
+
+---
+
+### R1 Partial Profit Booking
+Mandatory partial profit logic with clear confirmation and undo support.
+
+![R1 Booking](screenshots/r1_booking.png)
+
+---
+
+### Settings – Risk & Capital Rules
+Centralized rule configuration used across the app.
+
+![Risk Reward Settings](screenshots/settings_risk_reward.png)
+
 
 ❌ Intentionally Excluded from V1
 
@@ -150,7 +181,7 @@ Firestore used only for trade data
 
 Settings stored locally
 
-Auth will be added only if/when required
+Authentication will be added only if/when required
 
 🧪 Current Status
 
@@ -168,7 +199,7 @@ Only after sufficient real usage:
 
 Dashboard & portfolio overview
 
-Trade history & performance
+Trade history & performance analysis
 
 Multi-device sync
 
