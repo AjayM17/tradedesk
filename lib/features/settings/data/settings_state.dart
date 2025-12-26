@@ -3,13 +3,17 @@ import 'settings_storage.dart';
 
 class SettingsState extends ChangeNotifier {
   final SettingsStorage _storage = SettingsStorage();
+static const double defaultCapital = 1000000;
+static const double defaultRiskPercent = 1.0;
+static const double defaultMaxCapitalPerStock = 5.0;
 
   // ---------------------------
   // Internal State
   // ---------------------------
-  double _totalCapital = 1000000;
-  double _maxCapitalPerStockPercent = 10;
-  double _riskPerTradePercent = 1.0;
+double _totalCapital = defaultCapital;
+double _maxCapitalPerStockPercent = defaultMaxCapitalPerStock;
+double _riskPerTradePercent = defaultRiskPercent;
+
 
   // ---------------------------
   // Getters
@@ -73,4 +77,19 @@ class SettingsState extends ChangeNotifier {
     notifyListeners();
     await _storage.saveRiskPerTradePercent(value);
   }
+
+  Future<void> resetToDefaults() async {
+  _totalCapital = defaultCapital;
+  _riskPerTradePercent = defaultRiskPercent;
+  _maxCapitalPerStockPercent = defaultMaxCapitalPerStock;
+
+  notifyListeners();
+
+  await _storage.saveTotalCapital(_totalCapital);
+  await _storage.saveRiskPerTradePercent(_riskPerTradePercent);
+  await _storage.saveMaxCapitalPerStockPercent(
+    _maxCapitalPerStockPercent,
+  );
+}
+
 }

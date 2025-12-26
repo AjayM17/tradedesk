@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart' show ReadContext;
+import 'package:trade_desk/features/settings/data/settings_state.dart';
 import 'package:trade_desk/features/trades/data/models/trade_dto.dart';
+import 'package:trade_desk/features/trades/data/models/trade_model.dart';
 import 'package:trade_desk/features/trades/data/services/trade_firestore_service.dart';
 import 'package:trade_desk/features/trades/data/services/trade_service.dart';
+import 'package:trade_desk/features/trades/data/validators/trade_validator.dart';
 import 'package:trade_desk/features/trades/presentation/models/trade_ui_model.dart';
 
 class CreateTradeScreen extends StatefulWidget {
@@ -96,9 +100,7 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(isEditMode ? 'Edit Trade' : 'Add Trade'),
-      ),
+      appBar: AppBar(title: Text(isEditMode ? 'Edit Trade' : 'Add Trade')),
       body: Form(
         key: _formKey,
         onChanged: () => setState(() {}),
@@ -157,8 +159,7 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
           _selectedStock = v.trim().isEmpty ? null : v.trim();
           setState(() {});
         },
-        validator: (v) =>
-            v == null || v.trim().isEmpty ? 'Required' : null,
+        validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
       ),
     );
   }
@@ -250,9 +251,17 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // ✅ Capture context-dependent objects EARLY
+    final settings = context.read<SettingsState>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    // ─────────────────────────────
+    // R1 breaking-change check
+    // ─────────────────────────────
     final bool hasR1 = widget.trade?.r1 != null;
 
-    final bool breakingChange = hasR1 &&
+    final bool breakingChange =
+        hasR1 &&
         (entry != _oEntry ||
             sl != _oSl ||
             qty != _oQty ||
@@ -284,6 +293,24 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
       if (confirm != true) return;
     }
 
+    // ─────────────────────────────
+    // 🔒 Trade validation
+    // ─────────────────────────────
+    final trade = TradeModel(entryPrice: entry, stopLoss: sl, quantity: qty);
+
+    final validation = TradeValidator.validateNewTrade(
+      trade: trade,
+      settings: settings, // ✅ SAFE
+    );
+
+    if (!validation.isValid) {
+      messenger.showSnackBar(SnackBar(content: Text(validation.error!)));
+      return;
+    }
+
+    // ─────────────────────────────
+    // Save flow
+    // ─────────────────────────────
     setState(() => _isSaving = true);
 
     final dto = TradeDTO(
