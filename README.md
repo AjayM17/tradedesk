@@ -107,28 +107,28 @@ Consistent, distraction-free layout
 ### Trades Screen
 Shows active positional trades with risk, P&L, and R1 status.
 
-![Trades Screen](screenshots/trades_screen.png)
+<img src="screenshots/trades_screen.png" width="300" />
 
 ---
 
 ### Add / Edit Trade
 Rule-enforced trade creation with mandatory stop-loss and risk validation.
 
-![Add Trade](screenshots/add_trade.png)
+<img src="screenshots/add_trade.png" width="300" />
 
 ---
 
 ### R1 Partial Profit Booking
 Mandatory partial profit logic with clear confirmation and undo support.
 
-![R1 Booking](screenshots/r1_booking.png)
+<img src="screenshots/r1_booking.png" width="300" />
 
 ---
 
 ### Settings – Risk & Capital Rules
 Centralized rule configuration used across the app.
 
-![Risk Reward Settings](screenshots/settings_risk_reward.png)
+<img src="screenshots/settings_risk_reward.png" width="300" />
 
 
 ❌ Intentionally Excluded from V1
