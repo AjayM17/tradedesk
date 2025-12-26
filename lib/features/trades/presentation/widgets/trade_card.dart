@@ -99,7 +99,7 @@ class TradeCard extends StatelessWidget {
 
             const SizedBox(height: 6),
 
-            // ───────── Row 2: Qty | Buy | SL ─────────
+            // ───────── Row 2: Qty | Sold | Buy | SL ─────────
             _InlineRow(
               children: [
                 _inlineText('Qty', trade.remainingQuantity),

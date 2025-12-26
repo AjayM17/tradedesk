@@ -1,0 +1,59 @@
+import 'package:flutter/material.dart';
+import 'package:trade_desk/features/settings/presentation/screens/settings_screen.dart';
+import 'package:trade_desk/features/trades/presentation/screens/trades_screen.dart';
+
+class TabsShell extends StatefulWidget {
+  const TabsShell({super.key});
+
+  @override
+  State<TabsShell> createState() => _TabsShellState();
+}
+
+class _TabsShellState extends State<TabsShell> {
+  int _currentIndex = 0;
+
+  final _pages = const [
+    TradesScreen(),
+    PlaceholderScreen(title: 'Dashboard'),
+    SettingsScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (i) => setState(() => _currentIndex = i),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.swap_horiz),
+            label: 'Trades',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class PlaceholderScreen extends StatelessWidget {
+  final String title;
+
+  const PlaceholderScreen({super.key, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: Center(child: Text('$title Screen')),
+    );
+  }
+}
