@@ -12,7 +12,6 @@ class TradeUiModel {
   final TradeStatus status;
   final int quantity;
   final int partialQuantity;
-  final double investedAmount;
   final double pnlValue;
   final double pnlPercent;
   final double buyPrice;
@@ -20,7 +19,7 @@ class TradeUiModel {
   final double initialStopLoss;
   final double oneRTarget;
   final int ageInDays;
-  final DateTime tradeDate; 
+  final DateTime tradeDate;
   final R1Booking? r1;
 
   TradeUiModel({
@@ -29,7 +28,6 @@ class TradeUiModel {
     required this.status,
     required this.quantity,
     required this.partialQuantity,
-    required this.investedAmount,
     required this.pnlValue,
     required this.pnlPercent,
     required this.buyPrice,
@@ -41,8 +39,12 @@ class TradeUiModel {
     required this.r1,
   });
 
+  /// Remaining open quantity
   int get remainingQuantity {
-  if (r1 == null) return quantity;
-  return quantity - r1!.quantity;
-}
+    if (r1 == null) return quantity;
+    return quantity - r1!.quantity;
+  }
+
+  /// ✅ ACTIVE capital at risk (FINAL RULE)
+  double get investedAmount => buyPrice * remainingQuantity;
 }

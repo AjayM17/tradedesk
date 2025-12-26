@@ -1,5 +1,4 @@
 import 'package:trade_desk/features/trades/data/models/r1_booking.dart';
-
 import '../../presentation/models/trade_ui_model.dart';
 
 class TradeFirestoreDto {
@@ -12,30 +11,38 @@ class TradeFirestoreDto {
     final double entryPrice = (data['entryprice'] as num).toDouble();
     final int quantity = data['quantity'] as int;
     final double stopLoss = (data['stoploss'] as num).toDouble();
-    final double initialStopLoss = (data['initial_stoploss'] as num).toDouble();
+    final double initialStopLoss =
+        (data['initial_stoploss'] as num).toDouble();
 
-    // ── Derived values
+    // ───────── R1 ─────────
+    final Map<String, dynamic>? r1Data =
+        data['r1'] != null ? Map<String, dynamic>.from(data['r1']) : null;
+
+    final R1Booking? r1 =
+        r1Data != null ? R1Booking.fromMap(r1Data) : null;
+
+    // ───────── Quantities ─────────
+    final int remainingQuantity =
+        r1 == null ? quantity : quantity - r1.quantity;
+
     final int partialQuantity = (quantity * 0.25).floor();
-    final double investedAmount = entryPrice * quantity;
 
-    // P&L based on SL (as per your rule)
-    final double pnlValue = (stopLoss - entryPrice) * quantity;
-    final double pnlPercent = investedAmount == 0
+    // ───────── P&L (ACTIVE POSITION ONLY) ─────────
+    final double pnlValue =
+        (stopLoss - entryPrice) * remainingQuantity;
+
+    final double pnlPercent = remainingQuantity == 0
         ? 0
-        : (pnlValue / investedAmount) * 100;
+        : (pnlValue / (entryPrice * remainingQuantity)) * 100;
 
-    // 1R target (per-unit, NOT multiplied by quantity)
-    final double oneRTarget = (entryPrice - initialStopLoss).abs();
+    // ───────── 1R target (per unit) ─────────
+    final double oneRTarget =
+        (entryPrice - initialStopLoss).abs();
 
-    // Trade age calculation
+    // ───────── Trade age ─────────
     final DateTime tradeDate = DateTime.parse(data['trade_date']);
-    final int ageInDays = DateTime.now().difference(tradeDate).inDays;
-
-    final Map<String, dynamic>? r1Data = data['r1'] != null
-        ? Map<String, dynamic>.from(data['r1'])
-        : null;
-
-    final R1Booking? r1 = r1Data != null ? R1Booking.fromMap(r1Data) : null;
+    final int ageInDays =
+        DateTime.now().difference(tradeDate).inDays;
 
     return TradeUiModel(
       id: id,
@@ -46,7 +53,6 @@ class TradeFirestoreDto {
       ),
       quantity: quantity,
       partialQuantity: partialQuantity,
-      investedAmount: investedAmount,
       pnlValue: pnlValue,
       pnlPercent: pnlPercent,
       buyPrice: entryPrice,

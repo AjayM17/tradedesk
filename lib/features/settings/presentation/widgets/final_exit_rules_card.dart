@@ -15,18 +15,21 @@ class FinalExitRulesCard extends StatelessWidget {
             ),
           ),
           Divider(height: 1),
+
           ListTile(
-            title: Text('Exit on Weekly Close Only'),
+            title: Text(
+              'Exit Level = min(Previous Week Low, 20 EMA)',
+            ),
             trailing: Icon(Icons.lock),
           ),
+
           ListTile(
-            title: Text('Weekly Structure Break'),
+            title: Text(
+              'Exit if weekly candle closes below Exit Level',
+            ),
             trailing: Icon(Icons.lock),
           ),
-          ListTile(
-            title: Text('9 EMA closes below 20 EMA'),
-            trailing: Icon(Icons.lock),
-          ),
+
           ListTile(
             title: Text('No Intraday Exit'),
             trailing: Icon(Icons.block, color: Colors.red),
