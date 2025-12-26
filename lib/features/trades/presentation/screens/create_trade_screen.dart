@@ -109,7 +109,7 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
           children: [
             _stockField(),
             _datePicker(),
-            _statusDropdown(),
+            // _statusDropdown(),
 
             _numberField(_entryCtrl, 'Entry Price'),
             _numberField(_slCtrl, 'Stop Loss'),
@@ -249,97 +249,124 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
   // ───────── SAVE LOGIC ─────────
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+  if (!_formKey.currentState!.validate()) return;
 
-    // ✅ Capture context-dependent objects EARLY
-    final settings = context.read<SettingsState>();
-    final messenger = ScaffoldMessenger.of(context);
+  // ✅ Capture context-dependent objects EARLY
+  final settings = context.read<SettingsState>();
+  final messenger = ScaffoldMessenger.of(context);
 
-    // ─────────────────────────────
-    // R1 breaking-change check
-    // ─────────────────────────────
-    final bool hasR1 = widget.trade?.r1 != null;
+  // ─────────────────────────────
+  // R1 breaking-change check
+  // ─────────────────────────────
+  final bool hasR1 = widget.trade?.r1 != null;
 
-    final bool breakingChange =
-        hasR1 &&
-        (entry != _oEntry ||
-            sl != _oSl ||
-            qty != _oQty ||
-            (updateInitialSl && initialSl != _oInitSl));
+  final bool breakingChange =
+      hasR1 &&
+      (entry != _oEntry ||
+          sl != _oSl ||
+          qty != _oQty ||
+          (updateInitialSl && initialSl != _oInitSl));
 
-    if (breakingChange) {
-      final bool? confirm = await showDialog<bool>(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('R1 will be cleared'),
-          content: const Text(
-            'You changed trade parameters that affect R1.\n\n'
-            'Continuing will clear R1 execution.\n\n'
-            'Do you want to continue?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Continue'),
-            ),
-          ],
+  if (breakingChange) {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('R1 will be cleared'),
+        content: const Text(
+          'You changed trade parameters that affect R1.\n\n'
+          'Continuing will clear R1 execution.\n\n'
+          'Do you want to continue?',
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+  }
+
+  // ─────────────────────────────
+  // 🔒 Per-trade validation
+  // ─────────────────────────────
+  final trade = TradeModel(
+    entryPrice: entry,
+    stopLoss: sl,
+    quantity: qty,
+  );
+
+  final basicResult = TradeValidator.validateNewTrade(
+    trade: trade,
+    settings: settings,
+  );
+
+  if (!basicResult.isValid) {
+    messenger.showSnackBar(
+      SnackBar(content: Text(basicResult.error!)),
+    );
+    return;
+  }
+
+  // ─────────────────────────────
+  // 🔒 Portfolio Risk validation (≤ 6%)
+  // ─────────────────────────────
+  final activeTrades = await TradeService.getActiveTradeModels();
+
+  final portfolioResult = TradeValidator.validatePortfolioRisk(
+    newTrade: trade,
+    activeTrades: activeTrades,
+    settings: settings,
+  );
+
+  if (!portfolioResult.isValid) {
+    messenger.showSnackBar(
+      SnackBar(content: Text(portfolioResult.error!)),
+    );
+    return;
+  }
+
+  // ─────────────────────────────
+  // Save flow
+  // ─────────────────────────────
+  setState(() => _isSaving = true);
+
+  final dto = TradeDTO(
+    name: _selectedStock!.split('.').first,
+    symbol: _selectedStock!,
+    entryPrice: entry,
+    stopLoss: sl,
+    initialStopLoss: initialSl,
+    quantity: qty,
+    status: _status,
+    tradeDate:
+        '${_tradeDate.year}-${_tradeDate.month.toString().padLeft(2, '0')}-${_tradeDate.day.toString().padLeft(2, '0')}',
+  );
+
+  try {
+    if (isEditMode) {
+      await TradeFirestoreService().updateTrade(
+        tradeId: widget.trade!.id,
+        trade: dto,
+        clearR1: breakingChange,
       );
-
-      if (confirm != true) return;
+    } else {
+      await TradeService.addTrade(dto);
     }
 
-    // ─────────────────────────────
-    // 🔒 Trade validation
-    // ─────────────────────────────
-    final trade = TradeModel(entryPrice: entry, stopLoss: sl, quantity: qty);
-
-    final validation = TradeValidator.validateNewTrade(
-      trade: trade,
-      settings: settings, // ✅ SAFE
-    );
-
-    if (!validation.isValid) {
-      messenger.showSnackBar(SnackBar(content: Text(validation.error!)));
-      return;
-    }
-
-    // ─────────────────────────────
-    // Save flow
-    // ─────────────────────────────
-    setState(() => _isSaving = true);
-
-    final dto = TradeDTO(
-      name: _selectedStock!.split('.').first,
-      symbol: _selectedStock!,
-      entryPrice: entry,
-      stopLoss: sl,
-      initialStopLoss: initialSl,
-      quantity: qty,
-      status: _status,
-      tradeDate:
-          '${_tradeDate.year}-${_tradeDate.month.toString().padLeft(2, '0')}-${_tradeDate.day.toString().padLeft(2, '0')}',
-    );
-
-    try {
-      if (isEditMode) {
-        await TradeFirestoreService().updateTrade(
-          tradeId: widget.trade!.id,
-          trade: dto,
-          clearR1: breakingChange,
-        );
-      } else {
-        await TradeService.addTrade(dto);
-      }
-
-      if (!mounted) return;
-      Navigator.pop(context);
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
+    if (!mounted) return;
+    Navigator.pop(context);
+  } finally {
+    if (mounted) {
+      setState(() => _isSaving = false);
     }
   }
+}
+
 }

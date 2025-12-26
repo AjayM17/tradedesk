@@ -54,4 +54,16 @@ class TradeFirestoreService {
       'updated_at': DateTime.now().toIso8601String(),
     });
   }
+
+  Future<List<TradeUiModel>> getTradesOnce() async {
+  final snapshot = await _firestore.collection('holdings').get();
+
+  return snapshot.docs.map((doc) {
+    return TradeFirestoreDto(
+      id: doc.id,
+      data: doc.data(),
+    ).toUiModel();
+  }).toList();
+}
+
 }

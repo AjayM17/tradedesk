@@ -14,7 +14,7 @@ class _TabsShellState extends State<TabsShell> {
 
   final _pages = const [
     TradesScreen(),
-    PlaceholderScreen(title: 'Dashboard'),
+    // PlaceholderScreen(title: 'Dashboard'),
     SettingsScreen(),
   ];
 
@@ -30,10 +30,10 @@ class _TabsShellState extends State<TabsShell> {
             icon: Icon(Icons.swap_horiz),
             label: 'Trades',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(Icons.dashboard),
+          //   label: 'Dashboard',
+          // ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),
             label: 'Settings',

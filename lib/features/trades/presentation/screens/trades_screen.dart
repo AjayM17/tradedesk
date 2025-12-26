@@ -11,7 +11,7 @@ class TradesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My Trades')),
+      appBar: AppBar(title: const Text('Active Trades')),
       body: const TradesBody(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {

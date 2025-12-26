@@ -23,6 +23,27 @@ class TradeDTO {
     this.isR1Booked = false,
   });
 
+  // ---------------------------
+  // Firestore → DTO
+  // ---------------------------
+  factory TradeDTO.fromMap(Map<String, dynamic> map) {
+    return TradeDTO(
+      name: map['name'] ?? '',
+      symbol: map['symbol'] ?? '',
+      entryPrice: (map['entryprice'] as num).toDouble(),
+      stopLoss: (map['stoploss'] as num).toDouble(),
+      initialStopLoss:
+          (map['initial_stoploss'] as num).toDouble(),
+      quantity: (map['quantity'] as num).toInt(),
+      status: map['status'] ?? 'active',
+      tradeDate: map['trade_date'] ?? '',
+      isR1Booked: map['isR1Booked'] ?? false,
+    );
+  }
+
+  // ---------------------------
+  // DTO → Firestore
+  // ---------------------------
   Map<String, dynamic> toMap() {
     return {
       'name': name,

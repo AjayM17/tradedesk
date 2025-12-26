@@ -38,40 +38,18 @@ class TradeCard extends StatelessWidget {
                     Text(trade.name, style: textTheme.titleSmall),
                   ],
                 ),
+
                 Row(
                   children: [
-                    GestureDetector(
-                      onTap: () async {
-                        if (trade.r1 != null) {
-                          _showR1Info(context);
-                          return;
-                        }
-
-                        final r1 = await showDialog<R1Booking>(
-                          context: context,
-                          builder: (_) => R1BookingDialog(trade: trade),
-                        );
-
-                        if (r1 == null) return;
-
-                        await TradeFirestoreService().bookR1(
-                          tradeId: trade.id,
-                          r1: r1,
-                        );
-
-                        if (!context.mounted) return;
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('R1 booked successfully'),
-                          ),
-                        );
-                      },
+                    // 🏆 R1 ACTION (RESTORED)
+                    InkWell(
+                      borderRadius: BorderRadius.circular(6),
+                      onTap: () => _onR1Tap(context),
                       child: Row(
                         children: [
                           Text(
                             isR1Booked
-                                ? '${trade.r1?.sellPrice.toStringAsFixed(0)}'
+                                ? trade.r1!.sellPrice.toStringAsFixed(0)
                                 : r1TargetPrice.toStringAsFixed(0),
                             style: textTheme.bodySmall!.copyWith(
                               fontWeight: FontWeight.w600,
@@ -83,11 +61,13 @@ class TradeCard extends StatelessWidget {
                                 ? Icons.emoji_events
                                 : Icons.emoji_events_outlined,
                             size: 16,
-                            color: isR1Booked ? Colors.orange : Colors.grey,
+                            color:
+                                isR1Booked ? Colors.orange : Colors.grey,
                           ),
                         ],
                       ),
                     ),
+
                     IconButton(
                       icon: const Icon(Icons.more_vert, size: 18),
                       onPressed: () => _showActions(context),
@@ -103,7 +83,8 @@ class TradeCard extends StatelessWidget {
             _InlineRow(
               children: [
                 _inlineText('Qty', trade.remainingQuantity),
-                if (trade.r1 != null) _inlineText('Sold', trade.r1!.quantity),
+                if (trade.r1 != null)
+                  _inlineText('Sold', trade.r1!.quantity),
                 _inlineText('Buy', trade.buyPrice),
                 _inlineText('SL', trade.stopLoss),
               ],
@@ -119,7 +100,8 @@ class TradeCard extends StatelessWidget {
                   'P&L: ${trade.pnlValue.toStringAsFixed(0)} '
                   '(${trade.pnlPercent.toStringAsFixed(1)}%)',
                   style: textTheme.bodySmall!.copyWith(
-                    color: isProfit ? AppTheme.success : AppTheme.danger,
+                    color:
+                        isProfit ? AppTheme.success : AppTheme.danger,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -141,6 +123,34 @@ class TradeCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  // ───────── R1 TAP HANDLER (RESTORED BEHAVIOR) ─────────
+  Future<void> _onR1Tap(BuildContext context) async {
+    // If already booked → show info
+    if (trade.r1 != null) {
+      _showR1Info(context);
+      return;
+    }
+
+    // Else → open booking dialog
+    final r1 = await showDialog<R1Booking>(
+      context: context,
+      builder: (_) => R1BookingDialog(trade: trade),
+    );
+
+    if (r1 == null) return;
+
+    await TradeFirestoreService().bookR1(
+      tradeId: trade.id,
+      r1: r1,
+    );
+
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('R1 booked successfully')),
     );
   }
 
@@ -177,7 +187,8 @@ class TradeCard extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => CreateTradeScreen(trade: trade),
+                        builder: (_) =>
+                            CreateTradeScreen(trade: trade),
                       ),
                     );
                   },
@@ -185,7 +196,8 @@ class TradeCard extends StatelessWidget {
 
                 if (trade.r1 != null)
                   ListTile(
-                    leading: const Icon(Icons.undo, color: Colors.orange),
+                    leading:
+                        const Icon(Icons.undo, color: Colors.orange),
                     title: const Text('Undo R1 Booked'),
                     onTap: () async {
                       Navigator.pop(context);
@@ -196,7 +208,8 @@ class TradeCard extends StatelessWidget {
                 const Divider(height: 24),
 
                 ListTile(
-                  leading: const Icon(Icons.delete, color: Colors.red),
+                  leading:
+                      const Icon(Icons.delete, color: Colors.red),
                   title: const Text(
                     'Delete Trade',
                     style: TextStyle(color: Colors.red),
@@ -214,10 +227,11 @@ class TradeCard extends StatelessWidget {
     );
   }
 
-  // ───────── R1 Info Dialog ─────────
+  // ───────── R1 INFO ─────────
   void _showR1Info(BuildContext context) {
     final r1 = trade.r1;
-    final double targetPrice = trade.buyPrice + trade.oneRTarget;
+    final double targetPrice =
+        trade.buyPrice + trade.oneRTarget;
 
     final int plannedQty = (trade.quantity * 0.25).floor();
 
@@ -226,7 +240,8 @@ class TradeCard extends StatelessWidget {
       builder: (_) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.emoji_events, color: Colors.orange, size: 20),
+            const Icon(Icons.emoji_events,
+                color: Colors.orange, size: 20),
             const SizedBox(width: 8),
             Text(
               r1 != null
@@ -242,18 +257,15 @@ class TradeCard extends StatelessWidget {
             Text('R1 Target: ₹${targetPrice.toStringAsFixed(0)}'),
             Text('1R (Risk): ₹${trade.oneRTarget.toStringAsFixed(0)}'),
             const SizedBox(height: 6),
-
-            // 🔥 Quantity logic
             Text(
               r1 != null
                   ? 'Quantity Sold: ${r1.quantity}'
                   : 'Planned Qty (25%): $plannedQty',
             ),
-
-            // 🔥 Sell price only if booked
             if (r1 != null) ...[
               const SizedBox(height: 6),
-              Text('Sell Price: ₹${r1.sellPrice.toStringAsFixed(0)}'),
+              Text(
+                  'Sell Price: ₹${r1.sellPrice.toStringAsFixed(0)}'),
             ],
           ],
         ),
@@ -272,7 +284,8 @@ class TradeCard extends StatelessWidget {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Delete Trade'),
-        content: const Text('This action cannot be undone. Are you sure?'),
+        content:
+            const Text('This action cannot be undone. Are you sure?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -281,9 +294,11 @@ class TradeCard extends StatelessWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              await TradeFirestoreService().deleteTrade(trade.id);
+              await TradeFirestoreService()
+                  .deleteTrade(trade.id);
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style:
+                TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),
           ),
         ],
@@ -291,7 +306,8 @@ class TradeCard extends StatelessWidget {
     );
   }
 
-  Widget _inlineText(String label, dynamic value, {String prefix = ''}) {
+  Widget _inlineText(String label, dynamic value,
+      {String prefix = ''}) {
     final String displayValue = value is double
         ? value.toStringAsFixed(0)
         : value.toString();
@@ -307,7 +323,6 @@ class TradeCard extends StatelessWidget {
 
 class _InlineRow extends StatelessWidget {
   final List<Widget> children;
-
   const _InlineRow({required this.children});
 
   @override
@@ -318,13 +333,11 @@ class _InlineRow extends StatelessWidget {
 
 class _StatusIcon extends StatelessWidget {
   final TradeStatus status;
-
   const _StatusIcon({required this.status});
 
   @override
   Widget build(BuildContext context) {
     Color color;
-
     switch (status) {
       case TradeStatus.active:
         color = Colors.green;
@@ -336,7 +349,6 @@ class _StatusIcon extends StatelessWidget {
         color = Colors.grey;
         break;
     }
-
     return Icon(Icons.circle, size: 10, color: color);
   }
 }

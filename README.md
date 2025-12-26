@@ -1,156 +1,187 @@
-📈 TradeDesk – Personal Trade Manager App
+📘 Trading Engine – V1
 
-TradeDesk is a personal trade management application built with Flutter and Firebase Firestore, designed to track positional/swing trades with a clean UI and rule-based calculations.
+Tagline:
 
-This project focuses on clarity, scalability, and correctness, rather than shortcuts.
+No Rule, No Trade
 
-🎯 Project Goal
+Trading Engine is a rule-based positional trading app focused on capital protection, discipline, and consistency.
+V1 is intentionally minimal and opinionated — built for real trading, not dashboards.
 
-To build a personal trading journal & trade manager that:
+🎯 Purpose of V1
 
-Tracks active and closed trades
+V1 exists to answer one question:
 
-Shows rule-based metrics (risk, 1R, P&L)
+Can a trader strictly follow predefined rules with the help of software?
 
-Uses a scalable architecture
+This version prioritizes:
 
-Can evolve without painful refactoring
+Rule enforcement over analytics
 
-✅ What Has Been Achieved (v1)
-🧱 Architecture & Structure
+Correctness over visual complexity
+
+Discipline over flexibility
+
+🧠 Trading Philosophy
+
+Weekly positional trading
+
+Rules are non-negotiable
+
+Capital protection comes first
+
+Decisions are made only at valid checkpoints
+
+If rules are not met → No Trade
+
+✅ Features Included in V1
+1️⃣ Trade Management
+
+Add, edit, delete trades
+
+Mandatory stop-loss
+
+Quantity-based position sizing
+
+Trade age tracking
+
+Status handling (currently Active only)
+
+2️⃣ Risk & Capital Rules (Strictly Enforced)
+
+Risk per trade (%)
+
+Max capital per stock (%)
+
+Portfolio risk cap (≤ 6%)
+
+Stop-loss cannot be bypassed
+
+Trades violating rules are blocked at save time
+
+3️⃣ R1 (Partial Profit) Handling
+
+Mandatory R1 booking logic
+
+Trophy icon for R1 state:
+
+🏆 Outline → R1 not booked
+
+🏆 Filled → R1 booked
+
+Tap trophy:
+
+Book R1 (if not booked)
+
+View R1 details (if booked)
+
+Undo R1 option available
+
+Editing trade after R1 requires confirmation
+
+4️⃣ Settings (Local, Rule-Driven)
+
+Total Capital
+
+Risk per Trade (%)
+
+Max Capital per Stock (%)
+
+Derived values auto-calculated
+
+Settings stored locally (no login required)
+
+5️⃣ Clean Trade UI
+
+Focused trade cards
+
+No clutter, no charts
+
+All critical trade data visible at a glance
+
+Consistent, distraction-free layout
+
+❌ Intentionally Excluded from V1
+
+The following are deliberately NOT included:
+
+Login / Signup
+
+Dashboard analytics
+
+Equity curve
+
+Market price fetching
+
+Notifications
+
+Reports / exports
+
+Multi-user support
+
+These are postponed to future versions based on real usage, not assumptions.
+
+🧱 Architecture Highlights
 
 Feature-based folder structure
 
-Clear separation of concerns:
+Clear separation of:
 
-Firestore (data source)
+UI
 
-DTO (mapping + calculations)
+Validation
 
-UI Model
+Data models
 
-UI Widgets
+Firestore services
 
-Scalable, clean architecture suitable for future growth
+Rule validation lives outside UI
 
-🔥 Firebase Integration
+Safe async handling (mounted checks)
 
-Firebase initialized correctly at app startup
+Designed to scale without refactoring core logic
 
-Firestore used as backend (holdings collection)
+🔐 Authentication & Data
 
-Real-time data via StreamBuilder
+No authentication in V1
 
-Open rules for personal usage (v1)
+Single-user, personal-use focus
 
-🔁 DTO-Based Data Mapping
+Firestore used only for trade data
 
-Introduced Data Transfer Object (DTO) layer
+Settings stored locally
 
-DTO responsibilities:
+Auth will be added only if/when required
 
-Map Firestore fields to UI model
+🧪 Current Status
 
-Perform deterministic calculations
+Version: V1
 
-Isolate backend changes from UI
+State: Feature-complete
 
-Calculated fields include:
+UI: Locked for V1
 
-Invested amount
+Next step: Use in real trades
 
-Partial quantity (25%)
+🧭 What Comes Next (V2 – Tentative)
 
-P&L (rule-based)
+Only after sufficient real usage:
 
-P&L %
+Dashboard & portfolio overview
 
-1R target
+Trade history & performance
 
-Trade age (days)
+Multi-device sync
 
-📊 Trade Screen (Core Feature)
+Optional authentication
 
-Clean and compact trade card UI
+Advanced analytics
 
-Displays:
+🧠 Final Note
 
-Name
+A trading app doesn’t need to look exciting.
+It needs to stop you from making mistakes.
 
-Quantity & partial quantity
+Trading Engine V1 is built with that belief.
 
-Buy price, SL, initial SL
-
-Invested amount
-
-P&L (₹ and %)
-
-1R target
-
-Trade age
-
-Partial profit status
-
-Handles:
-
-Loading state
-
-Empty state
-
-Live updates from Firestore
-
-🎨 UI & Theming
-
-Centralized app theme
-
-Reusable widgets
-
-Compact card design to support 10–15 trades per screen
-
-UI logic kept free from business logic
-
-🧠 Key Design Decisions
-
-UI-first development to validate UX before backend
-
-No dummy logic in production UI
-
-No calculations inside widgets
-
-Firestore stores facts, not derived values
-
-DTO handles mapping and calculations
-
-This makes field changes, renaming, or rule updates safe and localized.
-
-🚀 Current Status
-
-✅ Read-only version complete
-
-✅ Live data from Firestore
-
-✅ Stable v1 foundation
-
-🔜 Planned Next Steps
-
-Create trade / holding screen (write to Firestore)
-
-Dashboard summary (PnL, risk, R-multiple)
-
-Filters (Active / Closed / Free)
-
-Optional authentication (later)
-
-🛠 Tech Stack
-
-Flutter
-
-Firebase Firestore
-
-Dart
-
-Material UI
-
-📌 Note
-
-This app is built for personal use, with a focus on discipline, clarity, and long-term scalability, not rapid prototyping shortcuts.
+No Rule. No Trade.
+✔ V1 Complete ✅
