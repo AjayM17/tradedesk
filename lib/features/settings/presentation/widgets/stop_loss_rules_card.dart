@@ -15,18 +15,23 @@ class StopLossRulesCard extends StatelessWidget {
             ),
           ),
           Divider(height: 1),
+
           ListTile(
             title: Text('SL at Weekly Structure Low'),
             trailing: Icon(Icons.lock),
           ),
+
           ListTile(
             title: Text('Never widen Stop-Loss'),
             trailing: Icon(Icons.block, color: Colors.red),
           ),
+
+          // V1: SL tightening is optional, not trailing
           ListTile(
-            title: Text('Trail only using Weekly Structure'),
+            title: Text('SL may be tightened using Weekly Structure'),
             trailing: Icon(Icons.lock),
           ),
+
           ListTile(
             title: Text('No Intraday SL changes'),
             trailing: Icon(Icons.lock),

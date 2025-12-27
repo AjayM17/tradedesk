@@ -54,13 +54,37 @@ class RiskRewardSection extends StatelessWidget {
           const Divider(),
 
           // ---------------- Risk per Trade ----------------
+          // V1: Risk per trade is FIXED and not editable
           ListTile(
             title: const Text('Risk per Trade'),
             subtitle: const Text('Max loss per trade'),
-            trailing: _editableTrailing(
-              '$riskPercent% • ${indianCurrencyFormat.format(riskAmount)}',
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$riskPercent% • ${indianCurrencyFormat.format(riskAmount)}',
+                ),
+                const SizedBox(width: 6),
+                const Icon(Icons.lock, size: 16),
+              ],
             ),
-            onTap: () => _editRiskPercent(context, riskPercent),
+            // onTap intentionally disabled in V1
+          ),
+
+          const Divider(),
+
+          // ---------------- Max Portfolio Risk ----------------
+          // V1: Portfolio risk cap is a SYSTEM RULE
+          const ListTile(
+            title: Text('Max Portfolio Risk'),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('6%'),
+                SizedBox(width: 6),
+                Icon(Icons.lock, size: 16),
+              ],
+            ),
           ),
 
           const Divider(),
@@ -169,42 +193,10 @@ class RiskRewardSection extends StatelessWidget {
   }
 
   // =========================================================
-  // Edit Risk %
+  // Edit Risk % (KEPT FOR V2, NOT USED IN V1)
   // =========================================================
   void _editRiskPercent(BuildContext context, double current) {
-    const options = [minRiskPercent, 0.5, 1.0, 1.5, maxRiskPercent];
-
-    showModalBottomSheet(
-      context: context,
-      builder: (sheetContext) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Select Risk per Trade',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 12),
-              ...options.map(
-                (v) => ListTile(
-                  title: Text('$v%'),
-                  trailing: current == v
-                      ? const Icon(Icons.check, color: Colors.green)
-                      : null,
-                  onTap: () {
-                    final settings = sheetContext.read<SettingsState>();
-                    Navigator.pop(sheetContext);
-                    settings.updateRiskPerTradePercent(v);
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    // intentionally unused in V1
   }
 
   // =========================================================

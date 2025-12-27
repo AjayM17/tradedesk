@@ -13,6 +13,10 @@ class TradingStyleCard extends StatelessWidget {
               'Trading Style',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
+            subtitle: Text(
+              'Fixed for Trading Engine – V1',
+              style: TextStyle(fontSize: 12),
+            ),
           ),
           Divider(height: 1),
 

@@ -28,6 +28,21 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: const [
+          // 🔒 TAGLINE (SUBTLE, ONCE)
+          Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Center(
+              child: Text(
+                'No Rule. No Trade.',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+          ),
+
           TradingStyleCard(),
           SizedBox(height: 8),
 
@@ -43,7 +58,7 @@ class SettingsScreen extends StatelessWidget {
           PartialProfitCard(),
           SizedBox(height: 8),
 
-          AddOnRulesCard(),
+          // AddOnRulesCard(), // V1: intentionally disabled
           SizedBox(height: 8),
 
           FinalExitRulesCard(),
@@ -55,42 +70,40 @@ class SettingsScreen extends StatelessWidget {
   // ---------------------------
   // Reset Confirmation
   // ---------------------------
-void _confirmReset(BuildContext context) async {
-  // ✅ Capture dependencies BEFORE async gap
-  final settings = context.read<SettingsState>();
-  final messenger = ScaffoldMessenger.of(context);
+  void _confirmReset(BuildContext context) async {
+    final settings = context.read<SettingsState>();
+    final messenger = ScaffoldMessenger.of(context);
 
-  final confirm = await showDialog<bool>(
-    context: context,
-    builder: (_) => AlertDialog(
-      title: const Text('Reset Settings'),
-      content: const Text(
-        'This will reset all risk and rule settings '
-        'to their default values.\n\n'
-        'Do you want to continue?',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Reset Settings'),
+        content: const Text(
+          'This will reset all risk and rule settings '
+          'to their default values.\n\n'
+          'Do you want to continue?',
         ),
-        ElevatedButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: const Text('Reset'),
-        ),
-      ],
-    ),
-  );
-
-  if (confirm == true) {
-    settings.resetToDefaults();
-
-    messenger.showSnackBar(
-      const SnackBar(
-        content: Text('Settings reset to defaults'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Reset'),
+          ),
+        ],
       ),
     );
-  }
-}
 
+    if (confirm == true) {
+      settings.resetToDefaults();
+
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Settings reset to defaults'),
+        ),
+      );
+    }
+  }
 }

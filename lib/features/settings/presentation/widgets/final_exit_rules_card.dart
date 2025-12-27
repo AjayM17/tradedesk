@@ -16,20 +16,23 @@ class FinalExitRulesCard extends StatelessWidget {
           ),
           Divider(height: 1),
 
+          // V1: Exit level definition (fixed)
           ListTile(
             title: Text(
-              'Exit Level = min(Previous Week Low, 20 EMA)',
+              'Exit Level = min(Previous Week Low, Weekly 20 EMA)',
             ),
             trailing: Icon(Icons.lock),
           ),
 
+          // V1: Exit condition (weekly close only)
           ListTile(
             title: Text(
-              'Exit if weekly candle closes below Exit Level',
+              'Exit ONLY if weekly candle CLOSES below Exit Level',
             ),
             trailing: Icon(Icons.lock),
           ),
 
+          // V1: Hard restriction
           ListTile(
             title: Text('No Intraday Exit'),
             trailing: Icon(Icons.block, color: Colors.red),
