@@ -46,7 +46,7 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
   bool _isSaving = false;
   bool updateInitialSl = false;
 
-  /// portfolio-derived qty (stored in state)
+  /// Portfolio derived quantity
   int _maxQtyByPortfolio = 0;
 
   bool get isEditMode => widget.trade != null;
@@ -59,6 +59,7 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
 
   double get investment => entry * qty;
 
+  /// Downside risk only
   double get riskPerShare {
     final r = entry - sl;
     return r > 0 ? r : 0.0;
@@ -66,7 +67,7 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
 
   double get riskValue => riskPerShare * qty.toDouble();
 
-  // ───────── Max Quantity calculations ─────────
+  // ───────── Max Quantity Rules ─────────
 
   int get maxQtyByCapital {
     if (entry <= 0) return 0;
@@ -74,11 +75,14 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
   }
 
   int get maxQtyByRisk {
-    if (riskPerShare <= 0) return 0;
+    if (riskPerShare <= 0) {
+      // Risk-free trade → not limited by risk
+      return maxQtyByCapital;
+    }
     return (maxRiskValue / riskPerShare).floor();
   }
 
-  /// ✅ FINAL max quantity used everywhere
+  /// FINAL max quantity used everywhere
   int get maxQtyAllowed {
     return max(
       0,
@@ -89,14 +93,19 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
     );
   }
 
-  bool get isSaveEnabled =>
-      _selectedStock != null &&
-      qty > 0 &&
-      qty <= maxQtyAllowed &&
-      investment > 0 &&
-      investment <= maxCapitalPerTrade &&
-      riskValue > 0 &&
-      riskValue <= maxRiskValue;
+  /// ✅ EDIT-SAFE SAVE RULE
+  bool get isSaveEnabled {
+    if (_selectedStock == null || qty <= 0) return false;
+
+    final bool qtyValid = isEditMode
+        ? qty <= max(maxQtyAllowed, widget.trade!.quantity)
+        : qty <= maxQtyAllowed;
+
+    return qtyValid &&
+        investment > 0 &&
+        investment <= maxCapitalPerTrade &&
+        riskValue <= maxRiskValue;
+  }
 
   @override
   void initState() {
@@ -129,10 +138,10 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
     super.dispose();
   }
 
-  // ───────── Portfolio Risk → Max Qty ─────────
+  // ───────── Portfolio Risk → Qty ─────────
   Future<void> _recalculatePortfolioQty() async {
     if (riskPerShare <= 0) {
-      setState(() => _maxQtyByPortfolio = 0);
+      setState(() => _maxQtyByPortfolio = maxQtyByCapital);
       return;
     }
 
@@ -260,41 +269,10 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
               'Initial Stop Loss',
               enabled: updateInitialSl,
             ),
-
-            // Quantity with info
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: TextFormField(
-                controller: _qtyCtrl,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'Quantity (Max: $maxQtyAllowed)',
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.info_outline),
-                    onPressed: _showMaxQtyInfo,
-                  ),
-                ),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Required' : null,
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                'Max Invest: ₹${maxCapitalPerTrade.toStringAsFixed(0)}  |  '
-                'Max Risk: ₹${maxRiskValue.toStringAsFixed(0)}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-            ),
-
+            _quantityField(),
+            _limitsInfo(),
             _info('Investment', investment),
             _info('Risk Value', riskValue),
-
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: isSaveEnabled && !_isSaving ? _save : null,
@@ -308,7 +286,38 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
     );
   }
 
-  // ───────── Info Dialog ─────────
+  // ───────── Widgets ─────────
+
+  Widget _quantityField() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextFormField(
+        controller: _qtyCtrl,
+        keyboardType: TextInputType.number,
+        decoration: InputDecoration(
+          labelText: 'Quantity (Max: $maxQtyAllowed)',
+          border: const OutlineInputBorder(),
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.info_outline),
+            onPressed: _showMaxQtyInfo,
+          ),
+        ),
+        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+      ),
+    );
+  }
+
+  Widget _limitsInfo() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        'Max Invest: ₹${maxCapitalPerTrade.toStringAsFixed(0)}  |  '
+        'Max Risk: ₹${maxRiskValue.toStringAsFixed(0)}',
+        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+      ),
+    );
+  }
+
   void _showMaxQtyInfo() {
     showDialog(
       context: context,
@@ -338,7 +347,6 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
     );
   }
 
-  // ───────── Widgets ─────────
   Widget _stockField() {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -408,8 +416,7 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
           labelText: label,
           border: const OutlineInputBorder(),
         ),
-        validator: (v) =>
-            v == null || v.isEmpty ? 'Required' : null,
+        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
       ),
     );
   }
