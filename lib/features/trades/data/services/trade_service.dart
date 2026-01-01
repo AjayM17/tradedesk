@@ -20,25 +20,35 @@ class TradeService {
     final snapshot = await _db.collection('holdings').get();
 
     return snapshot.docs
-        .map((doc) => TradeDTO.fromMap(doc.data()))
+        .map(
+          (doc) => TradeDTO.fromFirestore(
+            doc.data(),
+            doc.id, // ✅ Firestore document id
+          ),
+        )
         .toList();
   }
 
   // ---------------------------
   // ACTIVE trades → TradeModel
   // ---------------------------
-  static Future<List<TradeModel>> getActiveTradeModels() async {
-    final allTrades = await getAllTradesOnce();
+static Future<List<TradeModel>> getActiveTradeModels() async {
+  final snapshot = await _db.collection('holdings').get();
 
-    return allTrades
-        .where((t) => t.status == 'active')
-        .map(
-          (t) => TradeModel(
-            entryPrice: t.entryPrice,
-            stopLoss: t.stopLoss,
-            quantity: t.quantity,
-          ),
-        )
-        .toList();
-  }
+  return snapshot.docs
+      .where((doc) => doc.data()['status'] == 'active')
+      .map(
+        (doc) {
+          final data = doc.data();
+          return TradeModel(
+            tradeId: doc.id, // ✅ THIS IS THE FIX
+            entryPrice: (data['entryprice'] as num).toDouble(),
+            stopLoss: (data['stoploss'] as num).toDouble(),
+            quantity: (data['quantity'] as num).toInt(),
+          );
+        },
+      )
+      .toList();
+}
+
 }

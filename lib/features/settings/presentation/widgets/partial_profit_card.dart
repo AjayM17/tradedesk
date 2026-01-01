@@ -16,10 +16,10 @@ class PartialProfitCard extends StatelessWidget {
           ),
           Divider(height: 1),
 
-          // V1: Partial profit is allowed but NOT mandatory
+          // V1: Partial profit is MANDATORY
           ListTile(
             title: Text('Partial Profit at 1R'),
-            subtitle: Text('Optional'),
+            subtitle: Text('Mandatory'),
             trailing: Icon(Icons.lock),
           ),
 

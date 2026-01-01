@@ -28,7 +28,7 @@ class SettingsStorage {
 
   Future<double> loadMaxCapitalPerStockPercent() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getDouble(_maxCapitalPerStockKey) ?? 10; // default 10%
+    return prefs.getDouble(_maxCapitalPerStockKey) ?? 5; // default 10%
   }
 
   // ---------------------------

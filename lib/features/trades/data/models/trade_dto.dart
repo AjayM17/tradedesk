@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TradeDTO {
-  final String name; // Display name (TCS)
-  final String symbol; // Full symbol (TCS.NS / TCS.BO)
+  final String? id; // 🔑 Firestore document id (NOT stored)
+  final String name;
+  final String symbol;
   final double entryPrice;
   final double stopLoss;
   final double initialStopLoss;
@@ -12,6 +13,7 @@ class TradeDTO {
   final bool isR1Booked;
 
   TradeDTO({
+    required this.id, // ✅ nullable but REQUIRED in constructor
     required this.name,
     required this.symbol,
     required this.entryPrice,
@@ -26,8 +28,12 @@ class TradeDTO {
   // ---------------------------
   // Firestore → DTO
   // ---------------------------
-  factory TradeDTO.fromMap(Map<String, dynamic> map) {
+  factory TradeDTO.fromFirestore(
+    Map<String, dynamic> map,
+    String docId,
+  ) {
     return TradeDTO(
+      id: docId, // ✅ comes from Firestore
       name: map['name'] ?? '',
       symbol: map['symbol'] ?? '',
       entryPrice: (map['entryprice'] as num).toDouble(),
