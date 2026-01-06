@@ -1,4 +1,5 @@
-import 'package:trade_desk/features/trades/data/models/r1_booking.dart';
+import '../models/trade_model.dart';
+import '../v2/trade_action_log.dart';
 import '../../presentation/models/trade_ui_model.dart';
 
 class TradeFirestoreDto {
@@ -8,60 +9,42 @@ class TradeFirestoreDto {
   TradeFirestoreDto({required this.id, required this.data});
 
   TradeUiModel toUiModel() {
-    final double entryPrice = (data['entryprice'] as num).toDouble();
-    final int quantity = data['quantity'] as int;
-    final double stopLoss = (data['stoploss'] as num).toDouble();
-    final double initialStopLoss =
-        (data['initial_stoploss'] as num).toDouble();
+    final entry = (data['entryprice'] as num).toDouble();
+    final sl = (data['stoploss'] as num).toDouble();
+    final initSl = (data['initial_stoploss'] as num).toDouble();
+    final qty = (data['quantity'] as num).toInt();
 
-    // ───────── R1 ─────────
-    final Map<String, dynamic>? r1Data =
-        data['r1'] != null ? Map<String, dynamic>.from(data['r1']) : null;
+    final actions = (data['actions'] as List<dynamic>? ?? [])
+        .map((e) => TradeActionLog.fromMap(
+              Map<String, dynamic>.from(e),
+            ))
+        .toList();
 
-    final R1Booking? r1 =
-        r1Data != null ? R1Booking.fromMap(r1Data) : null;
+    final trade = TradeModel(
+      tradeId: id,
+      entryPrice: entry,
+      stopLoss: sl,
+      quantity: qty,
+      initialStopLoss: initSl,
+      rValue: (entry - initSl).abs(),
+      actions: actions,
+    );
 
-    // ───────── Quantities ─────────
-    final int remainingQuantity =
-        r1 == null ? quantity : quantity - r1.quantity;
-
-    final int partialQuantity = (quantity * 0.25).floor();
-
-    // ───────── P&L (ACTIVE POSITION ONLY) ─────────
-    final double pnlValue =
-        (stopLoss - entryPrice) * remainingQuantity;
-
-    final double pnlPercent = remainingQuantity == 0
-        ? 0
-        : (pnlValue / (entryPrice * remainingQuantity)) * 100;
-
-    // ───────── 1R target (per unit) ─────────
-    final double oneRTarget =
-        (entryPrice - initialStopLoss).abs();
-
-    // ───────── Trade age ─────────
-    final DateTime tradeDate = DateTime.parse(data['trade_date']);
-    final int ageInDays =
-        DateTime.now().difference(tradeDate).inDays;
+    final tradeDate = DateTime.parse(data['trade_date']);
 
     return TradeUiModel(
       id: id,
-      name: data['name'] as String,
+      name: data['name'],
       status: TradeStatus.values.firstWhere(
         (e) => e.name == data['status'],
         orElse: () => TradeStatus.active,
       ),
-      quantity: quantity,
-      partialQuantity: partialQuantity,
-      pnlValue: pnlValue,
-      pnlPercent: pnlPercent,
-      buyPrice: entryPrice,
-      stopLoss: stopLoss,
-      initialStopLoss: initialStopLoss,
-      oneRTarget: oneRTarget,
-      ageInDays: ageInDays,
+      trade: trade,
+      pnlValue: (sl - entry) * qty,
+      pnlPercent:
+          qty == 0 ? 0 : ((sl - entry) / entry) * 100,
+      ageInDays: DateTime.now().difference(tradeDate).inDays,
       tradeDate: tradeDate,
-      r1: r1,
     );
   }
 }

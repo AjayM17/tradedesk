@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:trade_desk/features/trades/data/models/r1_booking.dart';
+
+import 'package:trade_desk/features/trades/data/models/trade_action_step.dart';
 import 'package:trade_desk/features/trades/data/services/trade_firestore_service.dart';
+import 'package:trade_desk/features/trades/data/v2/trade_v2_executor.dart';
 import 'package:trade_desk/features/trades/presentation/screens/create_trade_screen.dart';
-import 'package:trade_desk/features/trades/presentation/widgets/r1_booking_dialog.dart';
+import 'package:trade_desk/features/trades/presentation/widgets/add_on_v2_dialog.dart';
+import 'package:trade_desk/features/trades/presentation/widgets/r_booking_v2_dialog.dart';
+
 import '../../../../core/theme/app_theme.dart';
 import '../models/trade_ui_model.dart';
 
@@ -13,21 +17,18 @@ class TradeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = trade.trade;
     final textTheme = Theme.of(context).textTheme;
-
     final bool isProfit = trade.pnlValue >= 0;
-    final bool isR1Booked = trade.r1 != null;
-
-    final double r1TargetPrice = trade.buyPrice + trade.oneRTarget;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ───────── Row 1: Status | Name | R1 | Actions ─────────
+            // ───────── HEADER ─────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -38,297 +39,247 @@ class TradeCard extends StatelessWidget {
                     Text(trade.name, style: textTheme.titleSmall),
                   ],
                 ),
+                Text('Actions ${t.actionCount}/4', style: textTheme.bodySmall),
+              ],
+            ),
+
+            const SizedBox(height: 6),
+
+            // ───────── POSITION INFO ─────────
+            _row([
+              _kv('Qty', t.quantity),
+              _kv('Buy', t.entryPrice),
+              _kv('SL', t.stopLoss),
+            ]),
+
+            const SizedBox(height: 4),
+
+            _row([
+              _kv('Init SL', t.initialStopLoss),
+              _kv('Inv', '₹${trade.investedAmount.toStringAsFixed(0)}'),
+              _kv('Age', '${trade.ageInDays}d'),
+            ]),
+
+            const SizedBox(height: 6),
+
+            // ───────── P&L ─────────
+            Text(
+              'P&L: ${trade.pnlValue.toStringAsFixed(0)} '
+              '(${trade.pnlPercent.toStringAsFixed(1)}%)',
+              style: textTheme.bodySmall!.copyWith(
+                color: isProfit ? AppTheme.success : AppTheme.danger,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+
+            // ───────── ACTION SUMMARY ─────────
+            _actionSummaries(),
+
+            const SizedBox(height: 10),
+
+            // ───────── ACTION BAR ─────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CreateTradeScreen(trade: trade),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.edit, size: 16),
+                      label: const Text('Edit'),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton.icon(
+                      onPressed: () => _confirmDelete(context),
+                      icon: const Icon(
+                        Icons.delete,
+                        size: 16,
+                        color: Colors.red,
+                      ),
+                      label: const Text(
+                        'Delete',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
 
                 Row(
                   children: [
-                    // 🏆 R1 ACTION (RESTORED)
-                    InkWell(
-                      borderRadius: BorderRadius.circular(6),
-                      onTap: () => _onR1Tap(context),
-                      child: Row(
-                        children: [
-                          Text(
-                            isR1Booked
-                                ? trade.r1!.sellPrice.toStringAsFixed(0)
-                                : r1TargetPrice.toStringAsFixed(0),
-                            style: textTheme.bodySmall!.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            isR1Booked
-                                ? Icons.emoji_events
-                                : Icons.emoji_events_outlined,
-                            size: 16,
-                            color:
-                                isR1Booked ? Colors.orange : Colors.grey,
-                          ),
-                        ],
+                    if (t.step == TradeActionStep.none)
+                      TextButton(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => RBookingV2Dialog(trade: t),
+                          );
+                        },
+                        child: const Text('Book R1'),
                       ),
-                    ),
 
-                    IconButton(
-                      icon: const Icon(Icons.more_vert, size: 18),
-                      onPressed: () => _showActions(context),
-                    ),
+                    if (t.step == TradeActionStep.r1Done)
+                      TextButton(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => AddOnV2Dialog(trade: t),
+                          );
+                        },
+                        child: const Text('Add-On'),
+                      ),
                   ],
                 ),
               ],
             ),
 
-            const SizedBox(height: 6),
-
-            // ───────── Row 2: Qty | Sold | Buy | SL ─────────
-            _InlineRow(
-              children: [
-                _inlineText('Qty', trade.remainingQuantity),
-                if (trade.r1 != null)
-                  _inlineText('Sold', trade.r1!.quantity),
-                _inlineText('Buy', trade.buyPrice),
-                _inlineText('SL', trade.stopLoss),
-              ],
-            ),
-
-            const SizedBox(height: 6),
-
-            // ───────── Row 3: Invested | P&L ─────────
-            _InlineRow(
-              children: [
-                _inlineText('Inv', trade.investedAmount, prefix: '₹'),
-                Text(
-                  'P&L: ${trade.pnlValue.toStringAsFixed(0)} '
-                  '(${trade.pnlPercent.toStringAsFixed(1)}%)',
-                  style: textTheme.bodySmall!.copyWith(
-                    color:
-                        isProfit ? AppTheme.success : AppTheme.danger,
-                    fontWeight: FontWeight.w600,
-                  ),
+            // ───────── UNDO ─────────
+            if (trade.actions.isNotEmpty)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => _confirmUndo(context),
+                  icon: const Icon(Icons.undo, size: 16),
+                  label: const Text('Undo Last Action'),
                 ),
-              ],
-            ),
-
-            const SizedBox(height: 6),
-
-            // ───────── Row 4: Age | Init SL ─────────
-            _InlineRow(
-              children: [
-                _inlineText('Age', '${trade.ageInDays}d'),
-                _inlineText(
-                  'Init SL',
-                  trade.initialStopLoss.toStringAsFixed(0),
-                ),
-              ],
-            ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  // ───────── R1 TAP HANDLER (RESTORED BEHAVIOR) ─────────
-  Future<void> _onR1Tap(BuildContext context) async {
-    // If already booked → show info
-    if (trade.r1 != null) {
-      _showR1Info(context);
-      return;
-    }
-
-    // Else → open booking dialog
-    final r1 = await showDialog<R1Booking>(
-      context: context,
-      builder: (_) => R1BookingDialog(trade: trade),
-    );
-
-    if (r1 == null) return;
-
-    await TradeFirestoreService().bookR1(
-      tradeId: trade.id,
-      r1: r1,
-    );
-
-    if (!context.mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('R1 booked successfully')),
-    );
-  }
-
-  // ───────── Action Sheet ─────────
-  void _showActions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade400,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-
-                ListTile(
-                  leading: const Icon(Icons.edit),
-                  title: const Text('Edit Trade'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            CreateTradeScreen(trade: trade),
-                      ),
-                    );
-                  },
-                ),
-
-                if (trade.r1 != null)
-                  ListTile(
-                    leading:
-                        const Icon(Icons.undo, color: Colors.orange),
-                    title: const Text('Undo R1 Booked'),
-                    onTap: () async {
-                      Navigator.pop(context);
-                      await TradeFirestoreService().undoR1(trade.id);
-                    },
-                  ),
-
-                const Divider(height: 24),
-
-                ListTile(
-                  leading:
-                      const Icon(Icons.delete, color: Colors.red),
-                  title: const Text(
-                    'Delete Trade',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _confirmDelete(context);
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // ───────── R1 INFO ─────────
-  void _showR1Info(BuildContext context) {
-    final r1 = trade.r1;
-    final double targetPrice =
-        trade.buyPrice + trade.oneRTarget;
-
-    final int plannedQty = (trade.quantity * 0.25).floor();
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.emoji_events,
-                color: Colors.orange, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              r1 != null
-                  ? 'R1 Profit – ₹${r1.profit.toStringAsFixed(0)}'
-                  : 'R1 Target – ₹${targetPrice.toStringAsFixed(0)}',
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('R1 Target: ₹${targetPrice.toStringAsFixed(0)}'),
-            Text('1R (Risk): ₹${trade.oneRTarget.toStringAsFixed(0)}'),
-            const SizedBox(height: 6),
-            Text(
-              r1 != null
-                  ? 'Quantity Sold: ${r1.quantity}'
-                  : 'Planned Qty (25%): $plannedQty',
-            ),
-            if (r1 != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                  'Sell Price: ₹${r1.sellPrice.toStringAsFixed(0)}'),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmDelete(BuildContext context) {
-    showDialog(
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Delete Trade'),
-        content:
-            const Text('This action cannot be undone. Are you sure?'),
+        content: const Text(
+          'This trade and all its actions will be permanently deleted.',
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await TradeFirestoreService()
-                  .deleteTrade(trade.id);
-            },
-            style:
-                TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),
           ),
         ],
       ),
     );
+
+    if (confirmed == true) {
+      await TradeFirestoreService().deleteTrade(trade.id);
+    }
   }
 
-  Widget _inlineText(String label, dynamic value,
-      {String prefix = ''}) {
-    final String displayValue = value is double
-        ? value.toStringAsFixed(0)
-        : value.toString();
+  Future<void> _confirmUndo(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Undo Last Action'),
+        content: const Text(
+          'This will revert the most recent action.\n\n'
+          'This cannot be redone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Undo'),
+          ),
+        ],
+      ),
+    );
 
-    return Text(
-      '$label: $prefix$displayValue',
-      style: const TextStyle(fontSize: 12),
+    if (confirmed != true) return;
+
+    final reverted = TradeV2Executor.undoLastAction(trade: trade.trade);
+
+    final lastAction = trade.trade.actions.last;
+
+    await TradeFirestoreService().undoLastAction(
+      tradeId: trade.id,
+      updatedTradeFields: {
+        'quantity': reverted.quantity,
+        'actions': reverted.actions.map((a) => a.toMap()).toList(),
+      },
+      lastActionMap: lastAction.toMap(),
     );
   }
-}
 
-// ───────── Helpers ─────────
+  Widget _actionSummaries() {
+    if (trade.actions.isEmpty) return const SizedBox.shrink();
 
-class _InlineRow extends StatelessWidget {
-  final List<Widget> children;
-  const _InlineRow({required this.children});
+    final List<Widget> rows = [];
+    int rCount = 0;
 
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(spacing: 12, runSpacing: 4, children: children);
+    for (final a in trade.actions) {
+      if (a.kind.name == 'rBooking') {
+        rCount++;
+        rows.add(
+          _iconRow(
+            Icons.emoji_events,
+            Colors.orange,
+            'R$rCount @ ${a.price.toStringAsFixed(0)}'
+            ' | Qty: ${a.quantity}'
+            ' | +₹${a.pnl.toStringAsFixed(0)}',
+          ),
+        );
+      }
+
+      if (a.kind.name == 'addOn') {
+        rows.add(
+          _iconRow(
+            Icons.add_circle,
+            Colors.blue,
+            'Add-On @ ${a.price.toStringAsFixed(0)}'
+            ' | Qty: ${a.quantity}',
+          ),
+        );
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: rows,
+      ),
+    );
   }
+
+  Widget _row(List<Widget> children) =>
+      Wrap(spacing: 12, runSpacing: 4, children: children);
+
+  Widget _kv(String label, dynamic value) =>
+      Text('$label: $value', style: const TextStyle(fontSize: 12));
+
+  Widget _iconRow(IconData icon, Color color, String text) => Padding(
+    padding: const EdgeInsets.only(top: 2),
+    child: Row(
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+      ],
+    ),
+  );
 }
 
 class _StatusIcon extends StatelessWidget {
@@ -337,18 +288,14 @@ class _StatusIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color color;
-    switch (status) {
-      case TradeStatus.active:
-        color = Colors.green;
-        break;
-      case TradeStatus.free:
-        color = Colors.blue;
-        break;
-      case TradeStatus.closed:
-        color = Colors.grey;
-        break;
-    }
-    return Icon(Icons.circle, size: 10, color: color);
+    return Icon(
+      Icons.circle,
+      size: 10,
+      color: switch (status) {
+        TradeStatus.active => Colors.green,
+        TradeStatus.free => Colors.blue,
+        TradeStatus.closed => Colors.grey,
+      },
+    );
   }
 }

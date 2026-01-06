@@ -10,7 +10,6 @@ class TradeDTO {
   final int quantity;
   final String status;
   final String tradeDate;
-  final bool isR1Booked;
 
   TradeDTO({
     required this.id, // ✅ nullable but REQUIRED in constructor
@@ -22,7 +21,6 @@ class TradeDTO {
     required this.quantity,
     required this.status,
     required this.tradeDate,
-    this.isR1Booked = false,
   });
 
   // ---------------------------
@@ -43,7 +41,6 @@ class TradeDTO {
       quantity: (map['quantity'] as num).toInt(),
       status: map['status'] ?? 'active',
       tradeDate: map['trade_date'] ?? '',
-      isR1Booked: map['isR1Booked'] ?? false,
     );
   }
 
@@ -60,7 +57,6 @@ class TradeDTO {
       'quantity': quantity,
       'status': status,
       'trade_date': tradeDate,
-      'isR1Booked': isR1Booked,
       'created_at': FieldValue.serverTimestamp(),
     };
   }

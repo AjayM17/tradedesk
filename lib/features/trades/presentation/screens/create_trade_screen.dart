@@ -1,9 +1,11 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' show ReadContext;
+
 import 'package:trade_desk/features/settings/data/settings_state.dart';
 import 'package:trade_desk/features/trades/data/models/trade_dto.dart';
 import 'package:trade_desk/features/trades/data/models/trade_model.dart';
+import 'package:trade_desk/features/trades/data/models/trade_action_step.dart';
 import 'package:trade_desk/features/trades/data/services/trade_firestore_service.dart';
 import 'package:trade_desk/features/trades/data/services/trade_service.dart';
 import 'package:trade_desk/features/trades/data/validators/trade_validator.dart';
@@ -22,11 +24,9 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
   double get maxCapitalPerTrade =>
       context.read<SettingsState>().maxCapitalPerStockAmount;
 
-  double get maxRiskValue =>
-      context.read<SettingsState>().riskAmountPerTrade;
+  double get maxRiskValue => context.read<SettingsState>().riskAmountPerTrade;
 
-  double get totalCapital =>
-      context.read<SettingsState>().totalCapital;
+  double get totalCapital => context.read<SettingsState>().totalCapital;
 
   static const double maxPortfolioRiskPercent = 6.0;
 
@@ -46,7 +46,6 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
   bool _isSaving = false;
   bool updateInitialSl = false;
 
-  /// Portfolio derived quantity
   int _maxQtyByPortfolio = 0;
 
   bool get isEditMode => widget.trade != null;
@@ -59,46 +58,33 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
 
   double get investment => entry * qty;
 
-  /// Downside risk only
   double get riskPerShare {
     final r = entry - sl;
     return r > 0 ? r : 0.0;
   }
 
-  double get riskValue => riskPerShare * qty.toDouble();
+  double get riskValue => riskPerShare * qty;
 
-  // ───────── Max Quantity Rules ─────────
-
+  // ───────── Quantity Rules ─────────
   int get maxQtyByCapital {
     if (entry <= 0) return 0;
     return (maxCapitalPerTrade / entry).floor();
   }
 
   int get maxQtyByRisk {
-    if (riskPerShare <= 0) {
-      // Risk-free trade → not limited by risk
-      return maxQtyByCapital;
-    }
+    if (riskPerShare <= 0) return maxQtyByCapital;
     return (maxRiskValue / riskPerShare).floor();
   }
 
-  /// FINAL max quantity used everywhere
   int get maxQtyAllowed {
-    return max(
-      0,
-      min(
-        maxQtyByCapital,
-        min(maxQtyByRisk, _maxQtyByPortfolio),
-      ),
-    );
+    return max(0, min(maxQtyByCapital, min(maxQtyByRisk, _maxQtyByPortfolio)));
   }
 
-  /// ✅ EDIT-SAFE SAVE RULE
   bool get isSaveEnabled {
     if (_selectedStock == null || qty <= 0) return false;
 
     final bool qtyValid = isEditMode
-        ? qty <= max(maxQtyAllowed, widget.trade!.quantity)
+        ? qty <= max(maxQtyAllowed, widget.trade!.trade.quantity)
         : qty <= maxQtyAllowed;
 
     return qtyValid &&
@@ -114,15 +100,19 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
     updateInitialSl = !isEditMode;
 
     if (isEditMode) {
-      final t = widget.trade!;
-      _stockCtrl.text = t.name;
-      _selectedStock = t.name;
-      _entryCtrl.text = t.buyPrice.toStringAsFixed(2);
-      _slCtrl.text = t.stopLoss.toStringAsFixed(2);
-      _initSlCtrl.text = t.initialStopLoss.toStringAsFixed(2);
-      _qtyCtrl.text = t.quantity.toString();
-      _status = t.status.name;
-      _tradeDate = t.tradeDate;
+      final ui = widget.trade!;
+      final domain = ui.trade;
+
+      _stockCtrl.text = ui.name;
+      _selectedStock = ui.name;
+
+      _entryCtrl.text = ui.buyPrice.toStringAsFixed(2);
+      _slCtrl.text = domain.stopLoss.toStringAsFixed(2);
+      _initSlCtrl.text = domain.initialStopLoss.toStringAsFixed(2);
+      _qtyCtrl.text = domain.quantity.toString();
+
+      _status = ui.status.name;
+      _tradeDate = ui.tradeDate;
     }
 
     _recalculatePortfolioQty();
@@ -138,7 +128,7 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
     super.dispose();
   }
 
-  // ───────── Portfolio Risk → Qty ─────────
+  // ───────── Portfolio Risk ─────────
   Future<void> _recalculatePortfolioQty() async {
     if (riskPerShare <= 0) {
       setState(() => _maxQtyByPortfolio = maxQtyByCapital);
@@ -149,18 +139,18 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
 
     double usedRisk = 0;
     for (final t in activeTrades) {
-      if (isEditMode && t.tradeId == widget.trade!.id) continue;
+      if (isEditMode && t.tradeId == widget.trade!.trade.tradeId) continue;
       usedRisk += t.totalRisk;
     }
 
-    final maxPortfolioRisk =
-        (totalCapital * maxPortfolioRiskPercent) / 100;
+    final maxPortfolioRisk = (totalCapital * maxPortfolioRiskPercent) / 100;
 
     final remainingRisk = maxPortfolioRisk - usedRisk;
 
     setState(() {
-      _maxQtyByPortfolio =
-          remainingRisk > 0 ? (remainingRisk / riskPerShare).floor() : 0;
+      _maxQtyByPortfolio = remainingRisk > 0
+          ? (remainingRisk / riskPerShare).floor()
+          : 0;
     });
   }
 
@@ -170,11 +160,17 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
 
     final messenger = ScaffoldMessenger.of(context);
 
+    final resolvedInitialSl = updateInitialSl ? sl : initialSl;
+    final rValue = (entry - resolvedInitialSl).abs();
+
     final trade = TradeModel(
-      tradeId: isEditMode ? widget.trade!.id : null,
+      tradeId: isEditMode ? widget.trade!.trade.tradeId : null,
       entryPrice: entry,
       stopLoss: sl,
       quantity: qty,
+      initialStopLoss: resolvedInitialSl,
+      rValue: rValue,
+      // actions default to []
     );
 
     final basicResult = TradeValidator.validateNewTrade(
@@ -183,9 +179,7 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
     );
 
     if (!basicResult.isValid) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(basicResult.error!)),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(basicResult.error!)));
       return;
     }
 
@@ -195,25 +189,23 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
       newTrade: trade,
       activeTrades: activeTrades,
       settings: context.read<SettingsState>(),
-      editingTradeId: isEditMode ? widget.trade!.id : null,
+      editingTradeId: isEditMode ? widget.trade!.trade.tradeId : null,
     );
 
     if (!portfolioResult.isValid) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(portfolioResult.error!)),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(portfolioResult.error!)));
       return;
     }
 
     setState(() => _isSaving = true);
 
     final dto = TradeDTO(
-      id: isEditMode ? widget.trade!.id : null,
+      id: isEditMode ? widget.trade!.trade.tradeId : null,
       name: _selectedStock!.split('.').first,
       symbol: _selectedStock!,
       entryPrice: entry,
       stopLoss: sl,
-      initialStopLoss: initialSl,
+      initialStopLoss: resolvedInitialSl,
       quantity: qty,
       status: _status,
       tradeDate:
@@ -223,9 +215,8 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
     try {
       if (isEditMode) {
         await TradeFirestoreService().updateTrade(
-          tradeId: widget.trade!.id,
+          tradeId: widget.trade!.trade.tradeId!,
           trade: dto,
-          clearR1: false,
         );
       } else {
         await TradeService.addTrade(dto);
@@ -241,9 +232,7 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(isEditMode ? 'Edit Trade' : 'Add Trade'),
-      ),
+      appBar: AppBar(title: Text(isEditMode ? 'Edit Trade' : 'Add Trade')),
       body: Form(
         key: _formKey,
         onChanged: () {
@@ -297,10 +286,6 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
         decoration: InputDecoration(
           labelText: 'Quantity (Max: $maxQtyAllowed)',
           border: const OutlineInputBorder(),
-          suffixIcon: IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: _showMaxQtyInfo,
-          ),
         ),
         validator: (v) => v == null || v.isEmpty ? 'Required' : null,
       ),
@@ -318,35 +303,6 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
     );
   }
 
-  void _showMaxQtyInfo() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Max Quantity Calculation'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('• By Capital: $maxQtyByCapital'),
-            Text('• By Trade Risk: $maxQtyByRisk'),
-            Text('• By Portfolio Risk: $_maxQtyByPortfolio'),
-            const Divider(),
-            Text(
-              'Final Max Quantity: $maxQtyAllowed',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _stockField() {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -359,8 +315,7 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
         onChanged: (v) {
           _selectedStock = v.trim().isEmpty ? null : v.trim();
         },
-        validator: (v) =>
-            v == null || v.trim().isEmpty ? 'Required' : null,
+        validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
       ),
     );
   }
