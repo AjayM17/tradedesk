@@ -15,9 +15,11 @@ class TradeFirestoreDto {
     final qty = (data['quantity'] as num).toInt();
 
     final actions = (data['actions'] as List<dynamic>? ?? [])
-        .map((e) => TradeActionLog.fromMap(
-              Map<String, dynamic>.from(e),
-            ))
+        .map(
+          (e) => TradeActionLog.fromMap(
+            Map<String, dynamic>.from(e),
+          ),
+        )
         .toList();
 
     final trade = TradeModel(
@@ -30,6 +32,44 @@ class TradeFirestoreDto {
       actions: actions,
     );
 
+    // ─────────────────────────────────────
+    // 🔹 RECONSTRUCT BUY SIDE (COST BASIS)
+    // ─────────────────────────────────────
+
+    int initialQty = qty;
+    for (final a in actions) {
+      if (a.kind == TradeActionKind.rBooking) {
+        initialQty += a.quantity; // sold earlier
+      } else if (a.kind == TradeActionKind.addOn) {
+        initialQty -= a.quantity; // bought later
+      }
+    }
+
+    double totalBuyCost = entry * initialQty;
+    int totalBuyQty = initialQty;
+
+    for (final a in actions) {
+      if (a.kind == TradeActionKind.addOn) {
+        totalBuyCost += a.price * a.quantity;
+        totalBuyQty += a.quantity;
+      }
+    }
+
+    final double averageBuyPrice =
+        totalBuyQty > 0 ? totalBuyCost / totalBuyQty : entry;
+
+    // ─────────────────────────────────────
+    // 🔹 CORRECT P&L CALCULATION
+    // ─────────────────────────────────────
+
+    final double pnlValue =
+        (sl - averageBuyPrice) * qty;
+
+    final double pnlPercent =
+        averageBuyPrice == 0
+            ? 0
+            : ((sl - averageBuyPrice) / averageBuyPrice) * 100;
+
     final tradeDate = DateTime.parse(data['trade_date']);
 
     return TradeUiModel(
@@ -40,9 +80,8 @@ class TradeFirestoreDto {
         orElse: () => TradeStatus.active,
       ),
       trade: trade,
-      pnlValue: (sl - entry) * qty,
-      pnlPercent:
-          qty == 0 ? 0 : ((sl - entry) / entry) * 100,
+      pnlValue: pnlValue,
+      pnlPercent: pnlPercent,
       ageInDays: DateTime.now().difference(tradeDate).inDays,
       tradeDate: tradeDate,
     );
