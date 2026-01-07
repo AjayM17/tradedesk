@@ -1,53 +1,56 @@
 import '../models/trade_model.dart';
-import '../v2/wap_calculator.dart';
-import '../v2/worst_case_safety.dart';
+import '../v2/trade_action_log.dart';
+import 'trade_validation_result.dart';
 
 class TradeV2AddOnValidator {
-
-  static void validate({
+  static TradeAddOnValidationResult canOpenAddOn({
     required TradeModel trade,
-    required int addQty,
-    required double addPrice,
-    required double stopLoss,
   }) {
-    // Must already be profitable
-    if ((addPrice - trade.entryPrice) <= 0) {
-      throw Exception('Trade not in profit');
+    // 1️⃣ Trade must be active
+    if (trade.quantity <= 0) {
+      return const TradeAddOnValidationResult.denied(
+        'Add-On not allowed on closed trade',
+      );
     }
 
-    // Quantity cap ≤ 25%
-    final maxAddQty = (trade.quantity * 0.25).floor();
-    if (addQty <= 0 || addQty > maxAddQty) {
-      throw Exception('Add-On quantity exceeds limit');
-    }
-
-    // SL tightening only
-    if (stopLoss < trade.stopLoss) {
-      throw Exception('Stop-loss cannot be widened');
-    }
-
-    // SL ≥ WAP
-    final wap = WapCalculator.calculate(
-      currentQty: trade.quantity.toDouble(),
-      currentAvgPrice: trade.entryPrice,
-      addQty: addQty.toDouble(),
-      addPrice: addPrice,
+    // 2️⃣ R1 booking must exist
+    final hasR1 = trade.actions.any(
+      (a) => a.kind == TradeActionKind.rBooking,
     );
 
-    if (stopLoss < wap) {
-      throw Exception('Stop-loss below weighted average price');
+    if (!hasR1) {
+      return const TradeAddOnValidationResult.denied(
+        'Complete R1 booking before Add-On',
+      );
     }
 
-    // Worst-case safety
-    final safe = WorstCaseSafety.isSafe(
-      trade: trade,
-      addQty: addQty,
-      addPrice: addPrice,
-      stopLoss: stopLoss,
-    );
-
-    if (!safe) {
-      throw Exception('Worst-case safety violated');
+    // 3️⃣ Max actions
+    if (trade.actions.length >= 4) {
+      return const TradeAddOnValidationResult.denied(
+        'Maximum actions reached',
+      );
     }
+
+    // 4️⃣ Remaining position must be in profit
+    final double profitPerShare =
+        trade.stopLoss - trade.entryPrice;
+
+    if (profitPerShare <= 0) {
+      return const TradeAddOnValidationResult.denied(
+        'Add-On not allowed when remaining position is in loss',
+      );
+    }
+
+    // 5️⃣ Remaining profit must be at least 25%
+    final double profitPercent =
+        (profitPerShare / trade.entryPrice) * 100;
+
+    if (profitPercent < 25) {
+      return const TradeAddOnValidationResult.denied(
+        'Remaining position must be at least 25% in profit',
+      );
+    }
+
+    return const TradeAddOnValidationResult.allowed();
   }
 }

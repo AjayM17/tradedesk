@@ -25,15 +25,57 @@ class TradeUiModel {
     required this.tradeDate,
   });
 
+  // ───────── BASIC PASSTHROUGHS ─────────
   int get quantity => trade.quantity;
-  double get buyPrice => trade.entryPrice;
   double get stopLoss => trade.stopLoss;
   double get initialStopLoss => trade.initialStopLoss;
-
-  double get investedAmount =>
-      trade.entryPrice * trade.quantity;
-
   List<TradeActionLog> get actions => trade.actions;
 
   bool get isLocked => trade.actions.length >= 4;
+
+  // ───────── ENTRY / BUY LOGIC ─────────
+
+  /// Reconstruct initial entry quantity
+  /// (before any sell or add-on)
+  int get initialQuantity {
+    int qty = trade.quantity;
+
+    for (final a in trade.actions) {
+      if (a.kind == TradeActionKind.rBooking) {
+        qty += a.quantity; // sold earlier
+      } else if (a.kind == TradeActionKind.addOn) {
+        qty -= a.quantity; // bought later
+      }
+    }
+
+    return qty;
+  }
+
+  /// Average buy price (ONLY BUY prices)
+  /// Sell actions do NOT affect cost basis
+  double get averageBuyPrice {
+    double totalCost =
+        trade.entryPrice * initialQuantity;
+    int totalQty = initialQuantity;
+
+    for (final a in trade.actions) {
+      if (a.kind == TradeActionKind.addOn) {
+        totalCost += a.price * a.quantity;
+        totalQty += a.quantity;
+      }
+    }
+
+    return totalQty > 0
+        ? totalCost / totalQty
+        : trade.entryPrice;
+  }
+
+  // ───────── DERIVED UI VALUES ─────────
+
+  /// For UI display only
+  double get buyPrice => averageBuyPrice;
+
+  /// Invested amount based on current quantity & avg buy
+  double get investedAmount =>
+      averageBuyPrice * trade.quantity;
 }

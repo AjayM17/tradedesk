@@ -58,7 +58,7 @@ class SettingsScreen extends StatelessWidget {
           PartialProfitCard(),
           SizedBox(height: 8),
 
-          // AddOnRulesCard(), // V1: intentionally disabled
+          AddOnRulesCard(), // V1: intentionally disabled
           SizedBox(height: 8),
 
           FinalExitRulesCard(),

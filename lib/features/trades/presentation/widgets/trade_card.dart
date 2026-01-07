@@ -1,19 +1,45 @@
 import 'package:flutter/material.dart';
 
-import 'package:trade_desk/features/trades/data/models/trade_action_step.dart';
 import 'package:trade_desk/features/trades/data/services/trade_firestore_service.dart';
 import 'package:trade_desk/features/trades/data/v2/trade_v2_executor.dart';
+import 'package:trade_desk/features/trades/data/validators/trade_v2_addon_validator.dart';
 import 'package:trade_desk/features/trades/presentation/screens/create_trade_screen.dart';
 import 'package:trade_desk/features/trades/presentation/widgets/add_on_v2_dialog.dart';
 import 'package:trade_desk/features/trades/presentation/widgets/r_booking_v2_dialog.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../models/trade_ui_model.dart';
+import '../../data/v2/trade_action_log.dart';
 
 class TradeCard extends StatelessWidget {
   final TradeUiModel trade;
 
   const TradeCard({super.key, required this.trade});
+
+  // ───────── HELPERS ─────────
+
+  /// Entry quantity (used ONLY for add-on cap)
+  int _originalQuantity() {
+    int qty = trade.trade.quantity;
+
+    for (final a in trade.actions) {
+      if (a.kind == TradeActionKind.rBooking) {
+        qty += a.quantity;
+      } else if (a.kind == TradeActionKind.addOn) {
+        qty -= a.quantity;
+      }
+    }
+    return qty;
+  }
+
+  int _rBookingCount() =>
+      trade.actions.where((a) => a.kind == TradeActionKind.rBooking).length;
+
+  int _addOnCount() =>
+      trade.actions.where((a) => a.kind == TradeActionKind.addOn).length;
+
+  TradeActionKind? _lastActionKind() =>
+      trade.actions.isEmpty ? null : trade.actions.last.kind;
 
   @override
   Widget build(BuildContext context) {
@@ -21,8 +47,15 @@ class TradeCard extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final bool isProfit = trade.pnlValue >= 0;
 
+    final int rCount = _rBookingCount();
+    final int addOnCount = _addOnCount();
+    final lastKind = _lastActionKind();
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -36,51 +69,88 @@ class TradeCard extends StatelessWidget {
                   children: [
                     _StatusIcon(status: trade.status),
                     const SizedBox(width: 6),
-                    Text(trade.name, style: textTheme.titleSmall),
+                    Text(
+                      trade.name,
+                      style: textTheme.titleSmall!
+                          .copyWith(fontWeight: FontWeight.w600),
+                    ),
                   ],
                 ),
-                Text('Actions ${t.actionCount}/4', style: textTheme.bodySmall),
+                Text(
+                  'Actions ${trade.actions.length}/4',
+                  style: textTheme.bodySmall!.copyWith(
+                    color: const Color(0xFF6B7280),
+                  ),
+                ),
               ],
             ),
 
-            const SizedBox(height: 6),
+            const SizedBox(height: 10),
 
-            // ───────── POSITION INFO ─────────
-            _row([
-              _kv('Qty', t.quantity),
-              _kv('Buy', t.entryPrice),
-              _kv('SL', t.stopLoss),
-            ]),
+            // ───────── KEY METRICS ─────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _metric('Qty', t.quantity),
+                _metric(
+                  'Buy (Avg)',
+                  trade.averageBuyPrice.toStringAsFixed(2),
+                ),
+                _metric('SL', t.stopLoss),
+              ],
+            ),
 
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
 
-            _row([
-              _kv('Init SL', t.initialStopLoss),
-              _kv('Inv', '₹${trade.investedAmount.toStringAsFixed(0)}'),
-              _kv('Age', '${trade.ageInDays}d'),
-            ]),
+            // ───────── SECONDARY INFO ─────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _smallKv('Init SL', t.initialStopLoss),
+                _smallKv(
+                  'Invested',
+                  '₹${trade.investedAmount.toStringAsFixed(0)}',
+                ),
+                _smallKv('Age', '${trade.ageInDays}d'),
+              ],
+            ),
 
-            const SizedBox(height: 6),
+            const SizedBox(height: 10),
 
             // ───────── P&L ─────────
-            Text(
-              'P&L: ${trade.pnlValue.toStringAsFixed(0)} '
-              '(${trade.pnlPercent.toStringAsFixed(1)}%)',
-              style: textTheme.bodySmall!.copyWith(
-                color: isProfit ? AppTheme.success : AppTheme.danger,
-                fontWeight: FontWeight.w600,
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: isProfit
+                    ? AppTheme.success.withOpacity(0.08)
+                    : AppTheme.danger.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                'P&L: ${trade.pnlValue.toStringAsFixed(0)} '
+                '(${trade.pnlPercent.toStringAsFixed(1)}%)',
+                style: TextStyle(
+                  color: isProfit
+                      ? AppTheme.success
+                      : AppTheme.danger,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
 
-            // ───────── ACTION SUMMARY ─────────
+            const SizedBox(height: 8),
+
+            // ───────── ACTION HISTORY ─────────
             _actionSummaries(),
 
-            const SizedBox(height: 10),
+            const Divider(height: 20),
 
             // ───────── ACTION BAR ─────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                // Utility
                 Row(
                   children: [
                     TextButton.icon(
@@ -88,14 +158,14 @@ class TradeCard extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => CreateTradeScreen(trade: trade),
+                            builder: (_) =>
+                                CreateTradeScreen(trade: trade),
                           ),
                         );
                       },
                       icon: const Icon(Icons.edit, size: 16),
                       label: const Text('Edit'),
                     ),
-                    const SizedBox(width: 8),
                     TextButton.icon(
                       onPressed: () => _confirmDelete(context),
                       icon: const Icon(
@@ -111,28 +181,64 @@ class TradeCard extends StatelessWidget {
                   ],
                 ),
 
+                // Strategy buttons
                 Row(
                   children: [
-                    if (t.step == TradeActionStep.none)
+                    if (trade.actions.isEmpty)
                       TextButton(
                         onPressed: () {
                           showDialog(
                             context: context,
-                            builder: (_) => RBookingV2Dialog(trade: t),
+                            builder: (_) =>
+                                RBookingV2Dialog(trade: t),
                           );
                         },
                         child: const Text('Book R1'),
                       ),
 
-                    if (t.step == TradeActionStep.r1Done)
+                    if (rCount == 1 &&
+                        addOnCount == 0 &&
+                        lastKind == TradeActionKind.rBooking)
                       TextButton(
                         onPressed: () {
+                          final result =
+                              TradeV2AddOnValidator.canOpenAddOn(
+                            trade: t,
+                          );
+
+                          if (!result.isAllowed) {
+                            _showInfoAlert(
+                              context,
+                              result.reason!,
+                            );
+                            return;
+                          }
+
+                          final maxAddOnQty =
+                              (_originalQuantity() * 0.25).floor();
+
                           showDialog(
                             context: context,
-                            builder: (_) => AddOnV2Dialog(trade: t),
+                            builder: (_) => AddOnV2Dialog(
+                              trade: t,
+                              maxAddOnQty: maxAddOnQty,
+                            ),
                           );
                         },
                         child: const Text('Add-On'),
+                      ),
+
+                    if (rCount == 1 &&
+                        addOnCount == 1 &&
+                        lastKind == TradeActionKind.addOn)
+                      TextButton(
+                        onPressed: () {
+                          _showInfoAlert(
+                            context,
+                            'R2 booking will be available in next phase.',
+                          );
+                        },
+                        child: const Text('Book R2'),
                       ),
                   ],
                 ),
@@ -155,6 +261,24 @@ class TradeCard extends StatelessWidget {
     );
   }
 
+  // ───────── INFO ALERT ─────────
+  void _showInfoAlert(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Info'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ───────── DELETE ─────────
   Future<void> _confirmDelete(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -182,14 +306,14 @@ class TradeCard extends StatelessWidget {
     }
   }
 
+  // ───────── UNDO ─────────
   Future<void> _confirmUndo(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Undo Last Action'),
         content: const Text(
-          'This will revert the most recent action.\n\n'
-          'This cannot be redone.',
+          'This will revert the most recent action.\n\nThis cannot be redone.',
         ),
         actions: [
           TextButton(
@@ -206,7 +330,8 @@ class TradeCard extends StatelessWidget {
 
     if (confirmed != true) return;
 
-    final reverted = TradeV2Executor.undoLastAction(trade: trade.trade);
+    final reverted =
+        TradeV2Executor.undoLastAction(trade: trade.trade);
 
     final lastAction = trade.trade.actions.last;
 
@@ -220,6 +345,7 @@ class TradeCard extends StatelessWidget {
     );
   }
 
+  // ───────── ACTION LIST ─────────
   Widget _actionSummaries() {
     if (trade.actions.isEmpty) return const SizedBox.shrink();
 
@@ -227,7 +353,7 @@ class TradeCard extends StatelessWidget {
     int rCount = 0;
 
     for (final a in trade.actions) {
-      if (a.kind.name == 'rBooking') {
+      if (a.kind == TradeActionKind.rBooking) {
         rCount++;
         rows.add(
           _iconRow(
@@ -240,7 +366,7 @@ class TradeCard extends StatelessWidget {
         );
       }
 
-      if (a.kind.name == 'addOn') {
+      if (a.kind == TradeActionKind.addOn) {
         rows.add(
           _iconRow(
             Icons.add_circle,
@@ -261,27 +387,56 @@ class TradeCard extends StatelessWidget {
     );
   }
 
-  Widget _row(List<Widget> children) =>
-      Wrap(spacing: 12, runSpacing: 4, children: children);
+  // ───────── UI HELPERS ─────────
+  Widget _metric(String label, dynamic value) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF6B7280),
+            ),
+          ),
+          Text(
+            '$value',
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      );
 
-  Widget _kv(String label, dynamic value) =>
-      Text('$label: $value', style: const TextStyle(fontSize: 12));
+  Widget _smallKv(String label, dynamic value) => Text(
+        '$label: $value',
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          color: Color(0xFF6B7280),
+        ),
+      );
 
   Widget _iconRow(IconData icon, Color color, String text) => Padding(
-    padding: const EdgeInsets.only(top: 2),
-    child: Row(
-      children: [
-        Icon(icon, size: 14, color: color),
-        const SizedBox(width: 6),
-        Text(
-          text,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        padding: const EdgeInsets.only(top: 2),
+        child: Row(
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 6),
+            Text(
+              text,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 }
 
+// ───────── STATUS ICON ─────────
 class _StatusIcon extends StatelessWidget {
   final TradeStatus status;
   const _StatusIcon({required this.status});

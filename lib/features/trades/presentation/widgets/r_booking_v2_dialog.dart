@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:trade_desk/features/trades/data/models/trade_model.dart';
-import 'package:trade_desk/features/trades/data/models/trade_action_type.dart';
 import 'package:trade_desk/features/trades/data/v2/r_booking_calculator.dart';
-import 'package:trade_desk/features/trades/data/v2/trade_action_log.dart';
 import 'package:trade_desk/features/trades/data/v2/trade_v2_executor.dart';
 import 'package:trade_desk/features/trades/data/services/trade_firestore_service.dart';
 
@@ -28,7 +26,9 @@ class _RBookingV2DialogState extends State<RBookingV2Dialog> {
     sellQty = RBookingCalculator.calculateQty(trade: widget.trade);
     targetPrice = widget.trade.entryPrice + widget.trade.rValue;
 
-    _priceCtrl = TextEditingController(text: targetPrice.toStringAsFixed(2));
+    _priceCtrl = TextEditingController(
+      text: targetPrice.toStringAsFixed(2),
+    );
   }
 
   @override
@@ -67,7 +67,10 @@ class _RBookingV2DialogState extends State<RBookingV2Dialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
-        ElevatedButton(onPressed: _confirm, child: const Text('Confirm R1')),
+        ElevatedButton(
+          onPressed: _confirm,
+          child: const Text('Confirm R1'),
+        ),
       ],
     );
   }
@@ -76,27 +79,17 @@ class _RBookingV2DialogState extends State<RBookingV2Dialog> {
     try {
       final execPrice = double.parse(_priceCtrl.text);
 
-      final result = TradeV2Executor.execute(
+      final result = TradeV2Executor.executeRBooking(
         trade: widget.trade,
-        action: TradeActionType.rBooking,
-      );
-
-      final actions = [...result.trade.actions];
-      final last = actions.last;
-
-      actions[actions.length - 1] = TradeActionLog(
-        kind: last.kind,
-        quantity: last.quantity,
-        price: execPrice,
-        pnl: (execPrice - widget.trade.entryPrice) * last.quantity,
-        timestamp: last.timestamp,
+        executionPrice: execPrice,
       );
 
       await TradeFirestoreService().updateTradeFields(
         tradeId: widget.trade.tradeId!,
         fields: {
           'quantity': result.trade.quantity,
-          'actions': actions.map((a) => a.toMap()).toList(),
+          'actions':
+              result.trade.actions.map((a) => a.toMap()).toList(),
           'updated_at': DateTime.now().toIso8601String(),
         },
       );
@@ -104,9 +97,9 @@ class _RBookingV2DialogState extends State<RBookingV2Dialog> {
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
     }
   }
 
