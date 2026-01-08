@@ -16,26 +16,30 @@ class PartialProfitCard extends StatelessWidget {
           ),
           Divider(height: 1),
 
-          // V1: Partial profit is MANDATORY
+          // PARTIAL PROFIT
           ListTile(
             title: Text('Partial Profit at 1R'),
             subtitle: Text('Mandatory'),
             trailing: Icon(Icons.lock),
           ),
 
-          // V1: Fixed reference value (display only)
+          // FIXED R VALUE
           ListTile(
-            title: Text('1R Profit %'),
+            title: Text('1R Profit Booking'),
             trailing: Text(
               '25%',
               style: TextStyle(fontWeight: FontWeight.w500),
             ),
           ),
 
-          // V1: SL movement is optional, not automatic
+          // SL HANDLING (OPTIONAL, RISK ONLY)
           ListTile(
-            title: Text('SL may be moved to Breakeven after 1R'),
-            subtitle: Text('Optional'),
+            title: Text(
+              'SL may be moved to Breakeven after 1R',
+            ),
+            subtitle: Text(
+              'Optional • Risk reduction only • Not for profit trailing',
+            ),
             trailing: Icon(Icons.lock),
           ),
         ],

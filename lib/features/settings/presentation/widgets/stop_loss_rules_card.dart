@@ -16,25 +16,57 @@ class StopLossRulesCard extends StatelessWidget {
           ),
           Divider(height: 1),
 
+          // INITIAL SL
           ListTile(
-            title: Text('SL at Weekly Structure Low'),
+            title: Text('Initial SL at Weekly Structure Low'),
             trailing: Icon(Icons.lock),
           ),
 
+          // HARD RULE
           ListTile(
             title: Text('Never widen Stop-Loss'),
             trailing: Icon(Icons.block, color: Colors.red),
           ),
 
-          // V1: SL tightening is optional, not trailing
+          // RISK REDUCTION (NOT TRAILING)
           ListTile(
-            title: Text('SL may be tightened using Weekly Structure'),
+            title: Text(
+              'SL may be tightened to reduce risk (not for trailing)',
+            ),
+            subtitle: Text('Only after weekly close • No profit booking'),
             trailing: Icon(Icons.lock),
           ),
 
+          // TIME DISCIPLINE
           ListTile(
             title: Text('No Intraday SL changes'),
             trailing: Icon(Icons.lock),
+          ),
+
+          // EMA TRAILING (PROFIT ONLY)
+          ListTile(
+            title: Text(
+              'EMA-based SL trailing is used only for profit protection',
+            ),
+            subtitle: Text(
+              'Weekly EMA • One-way movement • Never for risk reduction',
+            ),
+            trailing: Icon(Icons.lock),
+          ),
+
+          // 👇 REMINDER NOTE (NOT A RULE)
+          Padding(
+            padding: EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: Text(
+              'Reminder: Weekly EMA values such as 20 (slower, trend survival) '
+              'and 9 (faster, profit lock) are references only. '
+              'Choice affects aggressiveness, not exit rules.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
           ),
         ],
       ),

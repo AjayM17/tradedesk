@@ -16,23 +16,29 @@ class FinalExitRulesCard extends StatelessWidget {
           ),
           Divider(height: 1),
 
-          // V1: Exit level definition (fixed)
+          // EXIT DECISION
           ListTile(
             title: Text(
-              'Exit Level = min(Previous Week Low, Weekly 20 EMA)',
+              'Exit if Weekly RSI closes below 60',
+            ),
+            subtitle: Text(
+              'RSI is evaluated only after weekly close',
             ),
             trailing: Icon(Icons.lock),
           ),
 
-          // V1: Exit condition (weekly close only)
+          // EXECUTION
           ListTile(
             title: Text(
-              'Exit ONLY if weekly candle CLOSES below Exit Level',
+              'Exit on next trading session',
+            ),
+            subtitle: Text(
+              'No candle wait • Gap up or gap down ignored',
             ),
             trailing: Icon(Icons.lock),
           ),
 
-          // V1: Hard restriction
+          // HARD RULE
           ListTile(
             title: Text('No Intraday Exit'),
             trailing: Icon(Icons.block, color: Colors.red),

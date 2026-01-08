@@ -11,23 +11,18 @@ class AddOnRulesCard extends StatelessWidget {
         children: const [
           ListTile(
             title: Text(
-              'Add-On Rules (V2)',
+              'Add-On Rules',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Text(
-              'Rules for adding to an existing profitable position',
+              'Optional scaling into an existing profitable trade',
             ),
           ),
           Divider(height: 1),
 
-          // ───────── PRE-CONDITIONS ─────────
+          // ───────── CORE CONDITIONS ─────────
           _RuleItem(
-            text: 'Add-On is allowed only after R1 booking',
-            icon: Icons.lock,
-          ),
-          _RuleItem(
-            text:
-                'Remaining position must be in profit (minimum 25%)',
+            text: 'Add-On allowed only after partial profit at 1R',
             icon: Icons.lock,
           ),
           _RuleItem(
@@ -38,54 +33,18 @@ class AddOnRulesCard extends StatelessWidget {
 
           Divider(height: 12),
 
-          // ───────── QUANTITY RULE ─────────
+          // ───────── SIZE CONTROL ─────────
           _RuleItem(
-            text:
-                'Maximum Add-On quantity is 25% of original position',
+            text: 'Add-On quantity must not exceed 25% of original position',
             icon: Icons.rule,
           ),
 
           Divider(height: 12),
 
-          // ───────── STOP-LOSS ─────────
+          // ───────── EXIT & SL INTEGRITY ─────────
           _RuleItem(
-            text:
-                'Add-On does not modify Stop-Loss automatically',
+            text: 'Add-On does not change Stop-Loss or Exit rules',
             icon: Icons.info_outline,
-          ),
-          _RuleItem(
-            text:
-                'Stop-Loss tightening is a separate manual decision',
-            icon: Icons.info_outline,
-          ),
-
-          Divider(height: 12),
-
-          // ───────── SAFETY AFTER ADD-ON ─────────
-          _RuleItem(
-            text:
-                'After Add-On, total position must remain profitable',
-            icon: Icons.shield,
-          ),
-          _RuleItem(
-            text:
-                'Trade must retain a minimum safety buffer (10%)',
-            icon: Icons.shield,
-          ),
-
-          Divider(height: 12),
-
-          // ───────── FUTURE NOTE ─────────
-          Padding(
-            padding: EdgeInsets.fromLTRB(16, 4, 16, 12),
-            child: Text(
-              'Note: R2 booking will be introduced in a future version.',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
           ),
         ],
       ),
