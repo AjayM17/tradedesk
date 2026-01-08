@@ -14,7 +14,7 @@ class TradingStyleCard extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Text(
-              'Fixed for Trading Engine – V1',
+              'Fixed, simplified positional system',
               style: TextStyle(fontSize: 12),
             ),
           ),
@@ -22,19 +22,33 @@ class TradingStyleCard extends StatelessWidget {
 
           ListTile(
             title: Text('Style'),
-            subtitle: Text('Weekly Positional Trend Following'),
+            subtitle: Text(
+              'Weekly Positional Structural Trend Trading',
+            ),
             trailing: Icon(Icons.lock),
           ),
 
           ListTile(
             title: Text('Timeframe'),
-            subtitle: Text('Weekly candles only'),
+            subtitle: Text(
+              'Weekly candles only',
+            ),
+            trailing: Icon(Icons.lock),
+          ),
+
+          ListTile(
+            title: Text('Trend Reference'),
+            subtitle: Text(
+              'Single reference: Weekly 20 EMA',
+            ),
             trailing: Icon(Icons.lock),
           ),
 
           ListTile(
             title: Text('Noise Definition'),
-            subtitle: Text('Daily & intraday movements ignored'),
+            subtitle: Text(
+              'Daily & intraday movements ignored',
+            ),
             trailing: Icon(Icons.lock),
           ),
         ],

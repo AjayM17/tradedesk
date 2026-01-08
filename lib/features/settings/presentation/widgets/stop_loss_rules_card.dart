@@ -28,12 +28,14 @@ class StopLossRulesCard extends StatelessWidget {
             trailing: Icon(Icons.block, color: Colors.red),
           ),
 
-          // RISK REDUCTION (NOT TRAILING)
+          // STRUCTURE-BASED RISK REDUCTION
           ListTile(
             title: Text(
-              'SL may be tightened to reduce risk (not for trailing)',
+              'SL may be tightened only if weekly structure improves',
             ),
-            subtitle: Text('Only after weekly close • No profit booking'),
+            subtitle: Text(
+              'Weekly close only • Risk reduction, not profit trailing',
+            ),
             trailing: Icon(Icons.lock),
           ),
 
@@ -46,21 +48,21 @@ class StopLossRulesCard extends StatelessWidget {
           // EMA TRAILING (PROFIT ONLY)
           ListTile(
             title: Text(
-              'EMA-based SL trailing is used only for profit protection',
+              'EMA-based trailing is used only after trade is profitable',
             ),
             subtitle: Text(
-              'Weekly EMA • One-way movement • Never for risk reduction',
+              'Weekly 20 EMA • One-way movement • Profit protection only',
             ),
             trailing: Icon(Icons.lock),
           ),
 
-          // 👇 REMINDER NOTE (NOT A RULE)
+          // 👇 FINAL DISCIPLINE NOTE
           Padding(
             padding: EdgeInsets.fromLTRB(16, 4, 16, 12),
             child: Text(
-              'Reminder: Weekly EMA values such as 20 (slower, trend survival) '
-              'and 9 (faster, profit lock) are references only. '
-              'Choice affects aggressiveness, not exit rules.',
+              'Note: A single Weekly 20 EMA is used for exit discipline. '
+              'Extended distance from EMA is expected in strong trends '
+              'and is not a reason to exit early.',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey,

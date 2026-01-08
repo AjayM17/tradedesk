@@ -13,32 +13,45 @@ class PartialProfitCard extends StatelessWidget {
               'Partial Profit Rules',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
+            subtitle: Text(
+              'Mandatory profit booking rule',
+            ),
           ),
           Divider(height: 1),
 
-          // PARTIAL PROFIT
+          // MANDATORY 1R BOOKING
           ListTile(
-            title: Text('Partial Profit at 1R'),
-            subtitle: Text('Mandatory'),
+            title: Text('Profit Booking at 1R'),
+            subtitle: Text(
+              'Mandatory for every trade',
+            ),
             trailing: Icon(Icons.lock),
           ),
 
-          // FIXED R VALUE
+          // FIXED QUANTITY
           ListTile(
-            title: Text('1R Profit Booking'),
+            title: Text('Quantity Booked at 1R'),
             trailing: Text(
               '25%',
               style: TextStyle(fontWeight: FontWeight.w500),
             ),
           ),
 
-          // SL HANDLING (OPTIONAL, RISK ONLY)
+          // SL HANDLING AFTER 1R
           ListTile(
             title: Text(
-              'SL may be moved to Breakeven after 1R',
+              'SL may be moved to Breakeven after 1R booking',
             ),
             subtitle: Text(
-              'Optional • Risk reduction only • Not for profit trailing',
+              'Optional • Weekly close only • Risk reduction, not profit trailing',
+            ),
+            trailing: Icon(Icons.lock),
+          ),
+
+          // CLARITY FOR REMAINING POSITION
+          ListTile(
+            title: Text(
+              'Remaining position is managed only by Weekly 20 EMA or structure exits',
             ),
             trailing: Icon(Icons.lock),
           ),

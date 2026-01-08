@@ -9,15 +9,11 @@ class RiskRewardSection extends StatelessWidget {
   static const double minCapital = 10000;
   static const double maxCapital = 100000000; // 10 Cr
 
-  static const double minRiskPercent = 0.25;
-  static const double maxRiskPercent = 2.0;
-
   static const double minCapitalPerStock = 5.0;
   static const double maxCapitalPerStock = 25.0;
 
   @override
   Widget build(BuildContext context) {
-    // Fine-grained rebuilds only
     final totalCapital =
         context.select<SettingsState, double>((s) => s.totalCapital);
     final riskPercent =
@@ -35,8 +31,11 @@ class RiskRewardSection extends StatelessWidget {
         children: [
           const ListTile(
             title: Text(
-              '💰 Risk / Reward',
+              '💰 Risk Management',
               style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              'Capital protection rules for long-duration positional trades',
             ),
           ),
           const Divider(height: 1),
@@ -44,7 +43,7 @@ class RiskRewardSection extends StatelessWidget {
           // ---------------- Total Capital ----------------
           ListTile(
             title: const Text('Total Capital'),
-            subtitle: const Text('Used for all risk calculations'),
+            subtitle: const Text('Base capital for all risk calculations'),
             trailing: _editableTrailing(
               indianCurrencyFormat.format(totalCapital),
             ),
@@ -54,10 +53,11 @@ class RiskRewardSection extends StatelessWidget {
           const Divider(),
 
           // ---------------- Risk per Trade ----------------
-          // V1: Risk per trade is FIXED and not editable
           ListTile(
             title: const Text('Risk per Trade'),
-            subtitle: const Text('Max loss per trade'),
+            subtitle: const Text(
+              'Maximum acceptable loss per position (fixed rule)',
+            ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -68,15 +68,16 @@ class RiskRewardSection extends StatelessWidget {
                 const Icon(Icons.lock, size: 16),
               ],
             ),
-            // onTap intentionally disabled in V1
           ),
 
           const Divider(),
 
           // ---------------- Max Portfolio Risk ----------------
-          // V1: Portfolio risk cap is a SYSTEM RULE
           const ListTile(
             title: Text('Max Portfolio Risk'),
+            subtitle: Text(
+              'Total open risk across all positions at any time',
+            ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -92,20 +93,33 @@ class RiskRewardSection extends StatelessWidget {
           // ---------------- Max Capital per Stock ----------------
           ListTile(
             title: const Text('Max Capital per Stock'),
-            subtitle: const Text('Position concentration limit'),
+            subtitle: const Text(
+              'Position concentration limit per stock',
+            ),
             trailing: _editableTrailing(
               indianCurrencyFormat.format(maxCapitalAmount),
             ),
             onTap: () => _editMaxCapital(context, maxCapitalPercent),
+          ),
+
+          // ---------------- Philosophy Note ----------------
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: Text(
+              'Note: Risk limits are designed to survive drawdowns and '
+              'allow long-term trend holding without emotional pressure.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  // =========================================================
-  // Editable trailing (value + edit icon)
-  // =========================================================
   Widget _editableTrailing(String valueText) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -121,9 +135,6 @@ class RiskRewardSection extends StatelessWidget {
     );
   }
 
-  // =========================================================
-  // Edit Total Capital
-  // =========================================================
   void _editCapital(BuildContext context, double current) {
     final controller =
         TextEditingController(text: current.toStringAsFixed(0));
@@ -192,16 +203,6 @@ class RiskRewardSection extends StatelessWidget {
     );
   }
 
-  // =========================================================
-  // Edit Risk % (KEPT FOR V2, NOT USED IN V1)
-  // =========================================================
-  void _editRiskPercent(BuildContext context, double current) {
-    // intentionally unused in V1
-  }
-
-  // =========================================================
-  // Edit Max Capital per Stock %
-  // =========================================================
   void _editMaxCapital(BuildContext context, double current) {
     const options = [
       minCapitalPerStock,

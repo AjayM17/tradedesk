@@ -15,18 +15,25 @@ class AddOnRulesCard extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Text(
-              'Optional scaling into an existing profitable trade',
+              'Optional scaling using the same rules as a fresh entry',
             ),
           ),
           Divider(height: 1),
 
           // ───────── CORE CONDITIONS ─────────
           _RuleItem(
-            text: 'Add-On allowed only after partial profit at 1R',
+            text:
+                'Add-On allowed only after mandatory profit booking at 1R',
             icon: Icons.lock,
           ),
           _RuleItem(
-            text: 'Never add to a losing or breakeven trade',
+            text:
+                'Add-On is taken only after a correction and formation of a new weekly structure',
+            icon: Icons.lock,
+          ),
+          _RuleItem(
+            text:
+                'Trade must be clearly in profit; add-on is never allowed at breakeven or loss',
             icon: Icons.block,
             iconColor: Colors.red,
           ),
@@ -35,7 +42,8 @@ class AddOnRulesCard extends StatelessWidget {
 
           // ───────── SIZE CONTROL ─────────
           _RuleItem(
-            text: 'Add-On quantity must not exceed 25% of original position',
+            text:
+                'Add-On quantity must not exceed 25% of the original position size',
             icon: Icons.rule,
           ),
 
@@ -43,8 +51,14 @@ class AddOnRulesCard extends StatelessWidget {
 
           // ───────── EXIT & SL INTEGRITY ─────────
           _RuleItem(
-            text: 'Add-On does not change Stop-Loss or Exit rules',
+            text:
+                'Add-On follows the same Entry, Stop-Loss, and Exit rules as the base trade',
             icon: Icons.info_outline,
+          ),
+          _RuleItem(
+            text:
+                'Add-On is for trend continuation, not for averaging',
+            icon: Icons.lock,
           ),
         ],
       ),

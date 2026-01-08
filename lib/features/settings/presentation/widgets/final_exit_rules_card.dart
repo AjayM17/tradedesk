@@ -16,24 +16,35 @@ class FinalExitRulesCard extends StatelessWidget {
           ),
           Divider(height: 1),
 
-          // EXIT DECISION
+          // EMA-BASED EXIT (PRIMARY)
           ListTile(
             title: Text(
-              'Exit if Weekly RSI closes below 60',
+              'Exit if weekly candle CLOSES below Weekly 20 EMA',
             ),
             subtitle: Text(
-              'RSI is evaluated only after weekly close',
+              'Weekly close only • Single EMA exit reference',
             ),
             trailing: Icon(Icons.lock),
           ),
 
-          // EXECUTION
+          // STRUCTURE-BASED EXIT (SECONDARY)
           ListTile(
             title: Text(
-              'Exit on next trading session',
+              'Exit on weekly structure breakdown',
             ),
             subtitle: Text(
-              'No candle wait • Gap up or gap down ignored',
+              'Weekly close below last valid support',
+            ),
+            trailing: Icon(Icons.lock),
+          ),
+
+          // EXECUTION DISCIPLINE
+          ListTile(
+            title: Text(
+              'Exit on next trading session after weekly close',
+            ),
+            subtitle: Text(
+              'No candle wait • Gap up or gap down accepted',
             ),
             trailing: Icon(Icons.lock),
           ),

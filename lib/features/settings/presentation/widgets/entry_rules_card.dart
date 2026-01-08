@@ -13,27 +13,35 @@ class EntryRulesCard extends StatelessWidget {
               'Entry Rules',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            subtitle: Text('ALL conditions must be satisfied'),
+            subtitle: Text(
+              'ALL conditions must be satisfied',
+            ),
           ),
           Divider(height: 1),
 
+          // STRUCTURE FIRST
           ListTile(
             title: Text('Market Structure'),
-            subtitle: Text('Weekly Higher-High & Higher-Low'),
-            trailing: Icon(Icons.lock),
-          ),
-
-          ListTile(
-            title: Text('Trend Filter'),
-            subtitle: Text('Price above Weekly 20 EMA'),
-            trailing: Icon(Icons.lock),
-          ),
-
-          ListTile(
-            title: Text('Entry Trigger'),
             subtitle: Text(
-              '• Pullback in uptrend\n'
-              '• OR fresh weekly breakout',
+              'Weekly higher-high & higher-low OR valid support / demand zone',
+            ),
+            trailing: Icon(Icons.lock),
+          ),
+
+          // EMA AS FILTER (WEEKLY CLOSE)
+          ListTile(
+            title: Text('Trend Alignment'),
+            subtitle: Text(
+              'Weekly close above Weekly 20 EMA',
+            ),
+            trailing: Icon(Icons.lock),
+          ),
+
+          // ENTRY LOCATION
+          ListTile(
+            title: Text('Entry Type'),
+            subtitle: Text(
+              'Pullback into structure OR fresh weekly breakout',
             ),
             trailing: Icon(Icons.lock),
           ),
