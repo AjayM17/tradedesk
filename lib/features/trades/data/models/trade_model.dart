@@ -67,6 +67,11 @@ class TradeModel {
 
   double get investedAmount => entryPrice * quantity;
 
+  double get portfolioRisk {
+  final riskPerShare = entryPrice - stopLoss;
+  return riskPerShare > 0 ? riskPerShare * quantity : 0;
+}
+
   // ───────── IMMUTABLE UPDATE ─────────
   TradeModel copyWith({
     double? stopLoss,

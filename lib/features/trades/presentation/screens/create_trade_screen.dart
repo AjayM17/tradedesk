@@ -140,7 +140,7 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
     double usedRisk = 0;
     for (final t in activeTrades) {
       if (isEditMode && t.tradeId == widget.trade!.trade.tradeId) continue;
-      usedRisk += t.totalRisk;
+      usedRisk += t.portfolioRisk ;
     }
 
     final maxPortfolioRisk = (totalCapital * maxPortfolioRiskPercent) / 100;
