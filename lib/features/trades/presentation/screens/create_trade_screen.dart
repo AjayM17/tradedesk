@@ -135,8 +135,7 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
     }
 
     final activeTrades = await TradeService.getActiveTradeModels();
-
-    if (!mounted) return; // ✅ REQUIRED
+    if (!mounted) return;
 
     double usedRisk = 0;
     for (final t in activeTrades) {
@@ -148,10 +147,17 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
 
     final remainingRisk = maxPortfolioRisk - usedRisk;
 
+    final int portfolioQty = remainingRisk > 0
+        ? (remainingRisk / riskPerShare).floor()
+        : 0;
+
+    final int existingQty = isEditMode ? widget.trade!.trade.quantity : 0;
+
     setState(() {
-      _maxQtyByPortfolio = remainingRisk > 0
-          ? (remainingRisk / riskPerShare).floor()
-          : 0;
+      // ✅ KEY FIX
+      _maxQtyByPortfolio = isEditMode
+          ? max(portfolioQty, existingQty)
+          : portfolioQty;
     });
   }
 

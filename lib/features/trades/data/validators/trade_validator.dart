@@ -1,6 +1,8 @@
 import '../../../settings/data/settings_state.dart';
 import '../models/trade_model.dart';
 import '../models/trade_validation_result.dart';
+import 'dart:math';
+
 
 class TradeValidator {
   static const double maxPortfolioRiskPercent = 6.0;
@@ -46,36 +48,53 @@ static TradeValidationResult validatePortfolioRisk({
   required TradeModel newTrade,
   required List<TradeModel> activeTrades,
   required SettingsState settings,
-  String? editingTradeId, // 👈 important
+  String? editingTradeId,
 }) {
   double existingRisk = 0;
+  int existingQty = 0;
 
   for (final trade in activeTrades) {
-    // ✅ EXCLUDE the same trade while editing
     if (editingTradeId != null &&
         trade.tradeId != null &&
         trade.tradeId == editingTradeId) {
+      // ✅ capture existing qty
+      existingQty = trade.quantity;
       continue;
     }
-
     existingRisk += trade.totalRisk;
   }
 
   final double maxAllowedRisk =
       (settings.totalCapital * maxPortfolioRiskPercent) / 100;
 
-  final double finalRisk =
-      existingRisk + newTrade.totalRisk;
+  final double riskPerShare =
+      (newTrade.entryPrice - newTrade.stopLoss).abs();
 
-  if (finalRisk > maxAllowedRisk) {
+  if (riskPerShare <= 0) {
+    return const TradeValidationResult.valid();
+  }
+
+  final double remainingRisk = maxAllowedRisk - existingRisk;
+
+  final int portfolioQty = remainingRisk > 0
+      ? (remainingRisk / riskPerShare).floor()
+      : 0;
+
+  // ✅ SAME RULE AS UI
+  final int allowedQty = editingTradeId != null
+      ? max(portfolioQty, existingQty)
+      : portfolioQty;
+
+  if (newTrade.quantity > allowedQty) {
     return TradeValidationResult.invalid(
       'Portfolio risk limit exceeded.\n'
-      'Allowed: ₹${maxAllowedRisk.toStringAsFixed(0)}\n'
-      'Used: ₹${finalRisk.toStringAsFixed(0)}',
+      'Max allowed qty: $allowedQty',
     );
   }
 
   return const TradeValidationResult.valid();
 }
+
+
 
 }
