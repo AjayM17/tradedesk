@@ -14,44 +14,43 @@ class PartialProfitCard extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Text(
-              'Mandatory profit booking rule',
+              'Single partial for risk & psychological stability',
             ),
           ),
           Divider(height: 1),
 
-          // MANDATORY 1R BOOKING
+          // MANDATORY R1
           ListTile(
-            title: Text('Profit Booking at 1R'),
+            title: Text('Profit Booking'),
             subtitle: Text(
-              'Mandatory for every trade',
+              'Mandatory partial at +1R',
             ),
             trailing: Icon(Icons.lock),
           ),
 
           // FIXED QUANTITY
           ListTile(
-            title: Text('Quantity Booked at 1R'),
-            trailing: Text(
-              '25%',
-              style: TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
-
-          // SL HANDLING AFTER 1R
-          ListTile(
-            title: Text(
-              'SL may be moved to Breakeven after 1R booking',
-            ),
+            title: Text('Quantity Booked'),
             subtitle: Text(
-              'Optional • Weekly close only • Risk reduction, not profit trailing',
+              'Fixed 25% of position',
             ),
             trailing: Icon(Icons.lock),
           ),
 
-          // CLARITY FOR REMAINING POSITION
+          // PURPOSE OF R1
           ListTile(
-            title: Text(
-              'Remaining position is managed only by Weekly 20 EMA or structure exits',
+            title: Text('Purpose of R1'),
+            subtitle: Text(
+              'Reduces risk and improves psychological stability',
+            ),
+            trailing: Icon(Icons.lock),
+          ),
+
+          // POST R1 MANAGEMENT
+          ListTile(
+            title: Text('Post-R1 Management'),
+            subtitle: Text(
+              'Remaining position managed only by structure or Weekly 20 EMA',
             ),
             trailing: Icon(Icons.lock),
           ),

@@ -15,27 +15,49 @@ class AddOnRulesCard extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Text(
-              'Optional scaling using the same rules as a fresh entry',
+              'Optional scaling after R1 within intact weekly structure',
             ),
           ),
           Divider(height: 1),
 
-          // ───────── CORE CONDITIONS ─────────
+          // ───────── PRECONDITIONS ─────────
           _RuleItem(
-            text:
-                'Add-On allowed only after mandatory profit booking at 1R',
+            text: 'Add-On allowed only after mandatory R1 booking',
             icon: Icons.lock,
           ),
           _RuleItem(
             text:
-                'Add-On is taken only after a correction and formation of a new weekly structure',
+                'Base trade must be active, profitable, and in a valid weekly trend',
             icon: Icons.lock,
           ),
           _RuleItem(
             text:
-                'Trade must be clearly in profit; add-on is never allowed at breakeven or loss',
+                'Weekly structure must offer a fresh continuation setup after correction',
+            icon: Icons.lock,
+          ),
+
+          Divider(height: 12),
+
+          // ───────── PROFIT CONDITION ─────────
+          _RuleItem(
+            text:
+                'After add-on, the combined position must remain at least +10% in profit',
+            icon: Icons.lock,
+          ),
+
+          Divider(height: 12),
+
+          // ───────── RESTRICTIONS ─────────
+          _RuleItem(
+            text:
+                'No add-on during vertical, overextended, or unstable price moves',
             icon: Icons.block,
             iconColor: Colors.red,
+          ),
+          _RuleItem(
+            text:
+                'Add-On is strictly for trend continuation, not for averaging',
+            icon: Icons.lock,
           ),
 
           Divider(height: 12),
@@ -43,21 +65,16 @@ class AddOnRulesCard extends StatelessWidget {
           // ───────── SIZE CONTROL ─────────
           _RuleItem(
             text:
-                'Add-On quantity must not exceed 25% of the original position size',
+                'Add-On quantity must not exceed 25% of the original position',
             icon: Icons.rule,
           ),
 
           Divider(height: 12),
 
-          // ───────── EXIT & SL INTEGRITY ─────────
+          // ───────── EXIT & SL ─────────
           _RuleItem(
             text:
-                'Add-On follows the same Entry, Stop-Loss, and Exit rules as the base trade',
-            icon: Icons.info_outline,
-          ),
-          _RuleItem(
-            text:
-                'Add-On is for trend continuation, not for averaging',
+                'Add-On shares the same stop-loss and exit as the base trade',
             icon: Icons.lock,
           ),
         ],

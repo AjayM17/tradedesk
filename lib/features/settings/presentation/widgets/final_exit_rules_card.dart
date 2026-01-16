@@ -13,27 +13,30 @@ class FinalExitRulesCard extends StatelessWidget {
               'Final Exit Rules',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
+            subtitle: Text(
+              'Weekly-only exits based on structure or EMA',
+            ),
           ),
           Divider(height: 1),
 
-          // EMA-BASED EXIT (PRIMARY)
+          // STRUCTURE EXIT (PRIORITY)
           ListTile(
             title: Text(
-              'Exit if weekly candle CLOSES below Weekly 20 EMA',
+              'Exit on Weekly Higher Low (HL) break',
             ),
             subtitle: Text(
-              'Weekly close only • Single EMA exit reference',
+              'Weekly close below confirmed HL (wick-based)',
             ),
             trailing: Icon(Icons.lock),
           ),
 
-          // STRUCTURE-BASED EXIT (SECONDARY)
+          // EMA EXIT (FALLBACK)
           ListTile(
             title: Text(
-              'Exit on weekly structure breakdown',
+              'Exit on Weekly 20 EMA break',
             ),
             subtitle: Text(
-              'Weekly close below last valid support',
+              'Used only when EMA is the active stop-loss',
             ),
             trailing: Icon(Icons.lock),
           ),
@@ -41,17 +44,17 @@ class FinalExitRulesCard extends StatelessWidget {
           // EXECUTION DISCIPLINE
           ListTile(
             title: Text(
-              'Exit on next trading session after weekly close',
+              'Exit Execution',
             ),
             subtitle: Text(
-              'No candle wait • Gap up or gap down accepted',
+              'Execute on next trading session after weekly close',
             ),
             trailing: Icon(Icons.lock),
           ),
 
           // HARD RULE
           ListTile(
-            title: Text('No Intraday Exit'),
+            title: Text('No Intraday or Daily Exit'),
             trailing: Icon(Icons.block, color: Colors.red),
           ),
         ],

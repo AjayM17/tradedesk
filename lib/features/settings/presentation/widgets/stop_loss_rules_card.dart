@@ -13,62 +13,77 @@ class StopLossRulesCard extends StatelessWidget {
               'Stop-Loss Rules',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
+            subtitle: Text(
+              'Structure-first • Weekly-only • One-way protection',
+            ),
           ),
           Divider(height: 1),
 
           // INITIAL SL
           ListTile(
-            title: Text('Initial SL at Weekly Structure Low'),
+            title: Text('Initial Stop-Loss'),
+            subtitle: Text(
+              'Breakout support OR confirmed Weekly Higher Low (wick low)',
+            ),
             trailing: Icon(Icons.lock),
           ),
 
-          // HARD RULE
+          // BREAKOUT CONTEXT
           ListTile(
-            title: Text('Never widen Stop-Loss'),
+            title: Text('Breakout Trades'),
+            subtitle: Text(
+              'If no HH–HL exists, breakout support is valid initial SL\n'
+              'Breakout may start a new HH–HL cycle',
+            ),
+            trailing: Icon(Icons.lock),
+          ),
+
+          // HL DEFINITION
+          ListTile(
+            title: Text('Higher Low (HL) Definition'),
+            subtitle: Text(
+              'Pullback low after HH, confirmed by continuation\n'
+              'Pullback ≠ HL until confirmed',
+            ),
+            trailing: Icon(Icons.lock),
+          ),
+
+          // CORE PHILOSOPHY
+          ListTile(
+            title: Text('Do NOT wait for Lower Low'),
+            subtitle: Text(
+              'After HH → protect trade at HL',
+            ),
+            trailing: Icon(Icons.lock),
+          ),
+
+          // SL PRIORITY
+          ListTile(
+            title: Text('SL Priority'),
+            subtitle: Text(
+              'Clear HL → use HL\n'
+              'HL unclear or below EMA → use Weekly 20 EMA',
+            ),
+            trailing: Icon(Icons.lock),
+          ),
+
+          // EMA ROLE
+          ListTile(
+            title: Text('EMA Role'),
+            subtitle: Text(
+              'Weekly 20 EMA is fallback / safety net\n'
+              'Used mainly for profit trailing',
+            ),
+            trailing: Icon(Icons.lock),
+          ),
+
+          // HARD RULES
+          ListTile(
+            title: Text('Hard Rules'),
+            subtitle: Text(
+              'Never widen SL • No intraday or daily SL changes',
+            ),
             trailing: Icon(Icons.block, color: Colors.red),
-          ),
-
-          // STRUCTURE-BASED RISK REDUCTION
-          ListTile(
-            title: Text(
-              'SL may be tightened only if weekly structure improves',
-            ),
-            subtitle: Text(
-              'Weekly close only • Risk reduction, not profit trailing',
-            ),
-            trailing: Icon(Icons.lock),
-          ),
-
-          // TIME DISCIPLINE
-          ListTile(
-            title: Text('No Intraday SL changes'),
-            trailing: Icon(Icons.lock),
-          ),
-
-          // EMA TRAILING (PROFIT ONLY)
-          ListTile(
-            title: Text(
-              'EMA-based trailing is used only after trade is profitable',
-            ),
-            subtitle: Text(
-              'Weekly 20 EMA • One-way movement • Profit protection only',
-            ),
-            trailing: Icon(Icons.lock),
-          ),
-
-          // 👇 FINAL DISCIPLINE NOTE
-          Padding(
-            padding: EdgeInsets.fromLTRB(16, 4, 16, 12),
-            child: Text(
-              'Note: A single Weekly 20 EMA is used for exit discipline. '
-              'Extended distance from EMA is expected in strong trends '
-              'and is not a reason to exit early.',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
           ),
         ],
       ),

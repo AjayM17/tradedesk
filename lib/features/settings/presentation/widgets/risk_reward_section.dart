@@ -27,113 +27,83 @@ class RiskRewardSection extends StatelessWidget {
 
     return Card(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const ListTile(
             title: Text(
               '💰 Risk Management',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            subtitle: Text(
-              'Capital protection rules for long-duration positional trades',
-            ),
+            subtitle: Text('Capital & loss protection rules'),
           ),
           const Divider(height: 1),
 
-          // ---------------- Total Capital ----------------
+          // Total Capital (Editable)
           ListTile(
             title: const Text('Total Capital'),
-            subtitle: const Text('Base capital for all risk calculations'),
-            trailing: _editableTrailing(
-              indianCurrencyFormat.format(totalCapital),
-            ),
+            subtitle: const Text('Base for all calculations'),
+            trailing: _editable(indianCurrencyFormat.format(totalCapital)),
             onTap: () => _editCapital(context, totalCapital),
           ),
 
           const Divider(),
 
-          // ---------------- Risk per Trade ----------------
+          // Risk per Trade (Locked)
           ListTile(
             title: const Text('Risk per Trade'),
-            subtitle: const Text(
-              'Maximum acceptable loss per position (fixed rule)',
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '$riskPercent% • ${indianCurrencyFormat.format(riskAmount)}',
-                ),
-                const SizedBox(width: 6),
-                const Icon(Icons.lock, size: 16),
-              ],
+            subtitle: const Text('Fixed maximum loss'),
+            trailing: _locked(
+              '$riskPercent% • ${indianCurrencyFormat.format(riskAmount)}',
             ),
           ),
 
           const Divider(),
 
-          // ---------------- Max Portfolio Risk ----------------
+          // Max Portfolio Risk (Locked)
           const ListTile(
             title: Text('Max Portfolio Risk'),
-            subtitle: Text(
-              'Total open risk across all positions at any time',
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('6%'),
-                SizedBox(width: 6),
-                Icon(Icons.lock, size: 16),
-              ],
-            ),
+            subtitle: Text('Total open risk limit'),
+            trailing: _LockedText(value: '6%'),
           ),
 
           const Divider(),
 
-          // ---------------- Max Capital per Stock ----------------
+          // Max Capital per Stock (Editable)
           ListTile(
             title: const Text('Max Capital per Stock'),
-            subtitle: const Text(
-              'Position concentration limit per stock',
-            ),
-            trailing: _editableTrailing(
-              indianCurrencyFormat.format(maxCapitalAmount),
-            ),
+            subtitle: const Text('Position size cap'),
+            trailing: _editable(indianCurrencyFormat.format(maxCapitalAmount)),
             onTap: () => _editMaxCapital(context, maxCapitalPercent),
-          ),
-
-          // ---------------- Philosophy Note ----------------
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: Text(
-              'Note: Risk limits are designed to survive drawdowns and '
-              'allow long-term trend holding without emotional pressure.',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _editableTrailing(String valueText) {
+  // ---------- UI Helpers ----------
+
+  static Widget _editable(String value) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(valueText),
+        Text(value),
         const SizedBox(width: 6),
-        const Icon(
-          Icons.edit,
-          size: 16,
-          color: Colors.grey,
-        ),
+        const Icon(Icons.edit, size: 16, color: Colors.grey),
       ],
     );
   }
+
+  static Widget _locked(String value) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(value),
+        const SizedBox(width: 6),
+        const Icon(Icons.lock, size: 16),
+      ],
+    );
+  }
+
+  // ---------- Editors ----------
 
   void _editCapital(BuildContext context, double current) {
     final controller =
@@ -142,57 +112,50 @@ class RiskRewardSection extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (sheetContext) {
-        return SingleChildScrollView(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            MediaQuery.of(ctx).viewInsets.bottom + 16,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
                 'Edit Total Capital',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-
               TextField(
                 controller: controller,
                 keyboardType: TextInputType.number,
-                autofocus: true,
                 decoration: const InputDecoration(
                   prefixText: '₹ ',
                   border: OutlineInputBorder(),
                 ),
               ),
-
-              const SizedBox(height: 16),
-
+              const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: () {
-                  final value = double.tryParse(
-                    controller.text.replaceAll(',', ''),
-                  );
+                  final value =
+                      double.tryParse(controller.text.replaceAll(',', ''));
 
-                  if (value == null) return;
-
-                  if (value < minCapital || value > maxCapital) {
-                    ScaffoldMessenger.of(sheetContext).showSnackBar(
+                  if (value == null ||
+                      value < minCapital ||
+                      value > maxCapital) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
                       const SnackBar(
-                        content: Text(
-                          'Capital must be between ₹10,000 and ₹10 Cr',
-                        ),
+                        content:
+                            Text('Capital must be ₹10,000 – ₹10 Cr'),
                       ),
                     );
                     return;
                   }
 
-                  final settings = sheetContext.read<SettingsState>();
-                  Navigator.pop(sheetContext);
-                  settings.updateTotalCapital(value);
+                  ctx.read<SettingsState>().updateTotalCapital(value);
+                  Navigator.pop(ctx);
                 },
                 child: const Text('Save'),
               ),
@@ -204,17 +167,11 @@ class RiskRewardSection extends StatelessWidget {
   }
 
   void _editMaxCapital(BuildContext context, double current) {
-    const options = [
-      minCapitalPerStock,
-      10.0,
-      15.0,
-      20.0,
-      maxCapitalPerStock,
-    ];
+    const options = [5.0, 10.0, 15.0, 20.0, 25.0];
 
     showModalBottomSheet(
       context: context,
-      builder: (sheetContext) {
+      builder: (ctx) {
         return Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -222,19 +179,19 @@ class RiskRewardSection extends StatelessWidget {
             children: [
               const Text(
                 'Max Capital per Stock',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               ...options.map(
                 (v) => ListTile(
                   title: Text('$v%'),
-                  trailing: current == v
-                      ? const Icon(Icons.check, color: Colors.green)
-                      : null,
+                  trailing:
+                      current == v ? const Icon(Icons.check) : null,
                   onTap: () {
-                    final settings = sheetContext.read<SettingsState>();
-                    Navigator.pop(sheetContext);
-                    settings.updateMaxCapitalPerStockPercent(v);
+                    ctx
+                        .read<SettingsState>()
+                        .updateMaxCapitalPerStockPercent(v);
+                    Navigator.pop(ctx);
                   },
                 ),
               ),
@@ -242,6 +199,24 @@ class RiskRewardSection extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+// Small helper widget
+class _LockedText extends StatelessWidget {
+  final String value;
+  const _LockedText({required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(value),
+        const SizedBox(width: 6),
+        const Icon(Icons.lock, size: 16),
+      ],
     );
   }
 }
