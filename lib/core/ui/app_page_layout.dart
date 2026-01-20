@@ -13,15 +13,18 @@ class AppPageLayout extends StatelessWidget {
     final width = MediaQuery.of(context).size.width;
     final bool isMobile = width < 600;
 
-    return Center(
+    return Align(
+      alignment: Alignment.topCenter, // ✅ FIX
       child: ConstrainedBox(
         constraints: const BoxConstraints(
-          maxWidth: 760, // desktop/web max width
+          maxWidth: 760,
         ),
         child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: isMobile ? 12 : 24,
-            vertical: 16, // content spacing ONLY
+          padding: EdgeInsets.fromLTRB(
+            isMobile ? 12 : 24, // left
+            6,                  // top (minimal)
+            isMobile ? 12 : 24, // right
+            16,                 // bottom
           ),
           child: child,
         ),

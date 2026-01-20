@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trade_desk/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:trade_desk/features/settings/presentation/screens/settings_screen.dart';
 import 'package:trade_desk/features/trades/presentation/screens/trades_screen.dart';
 
@@ -13,9 +14,9 @@ class _TabsShellState extends State<TabsShell> {
   int _currentIndex = 0;
 
   final _pages = const [
-    TradesScreen(),
-    // PlaceholderScreen(title: 'Dashboard'),
-    SettingsScreen(),
+    TradesScreen(),       // index 0
+    DashboardScreen(),    // index 1
+    SettingsScreen(),     // index 2
   ];
 
   @override
@@ -30,30 +31,16 @@ class _TabsShellState extends State<TabsShell> {
             icon: Icon(Icons.swap_horiz),
             label: 'Trades',
           ),
-          // BottomNavigationBarItem(
-          //   icon: Icon(Icons.dashboard),
-          //   label: 'Dashboard',
-          // ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),
             label: 'Settings',
           ),
         ],
       ),
-    );
-  }
-}
-
-class PlaceholderScreen extends StatelessWidget {
-  final String title;
-
-  const PlaceholderScreen({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(child: Text('$title Screen')),
     );
   }
 }

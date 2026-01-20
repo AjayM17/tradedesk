@@ -19,7 +19,12 @@ class TradeDeskApp extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Trading Engine',
-        theme: AppTheme.lightTheme,
+
+        // ✅ Theme applied correctly
+        theme: AppTheme.light(),
+        darkTheme: AppTheme.dark(),
+        themeMode: ThemeMode.system,
+
         home: const TabsShell(),
       ),
     );

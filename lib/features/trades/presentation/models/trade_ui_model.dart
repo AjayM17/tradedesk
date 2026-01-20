@@ -54,8 +54,7 @@ class TradeUiModel {
   /// Average buy price (ONLY BUY prices)
   /// Sell actions do NOT affect cost basis
   double get averageBuyPrice {
-    double totalCost =
-        trade.entryPrice * initialQuantity;
+    double totalCost = trade.entryPrice * initialQuantity;
     int totalQty = initialQuantity;
 
     for (final a in trade.actions) {
@@ -65,9 +64,7 @@ class TradeUiModel {
       }
     }
 
-    return totalQty > 0
-        ? totalCost / totalQty
-        : trade.entryPrice;
+    return totalQty > 0 ? totalCost / totalQty : trade.entryPrice;
   }
 
   // ───────── DERIVED UI VALUES ─────────
@@ -76,6 +73,24 @@ class TradeUiModel {
   double get buyPrice => averageBuyPrice;
 
   /// Invested amount based on current quantity & avg buy
-  double get investedAmount =>
-      averageBuyPrice * trade.quantity;
+  double get investedAmount => averageBuyPrice * trade.quantity;
+
+  // ───────── DASHBOARD HELPERS ─────────
+
+  bool get isActive => status == TradeStatus.active;
+
+  bool get isInProfit => pnlValue > 0;
+
+  bool get isInLoss => pnlValue < 0;
+
+  /// Remaining downside risk in ₹
+  /// (only for active trades)
+  double get remainingRisk {
+    if (!isActive) return 0;
+
+    final riskPerUnit = buyPrice - stopLoss;
+    if (riskPerUnit <= 0) return 0;
+
+    return riskPerUnit * quantity;
+  }
 }
