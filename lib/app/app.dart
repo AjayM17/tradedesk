@@ -23,7 +23,7 @@ class TradeDeskApp extends StatelessWidget {
         // ✅ Theme applied correctly
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
-        themeMode: ThemeMode.system,
+        themeMode: ThemeMode.light,
 
         home: const TabsShell(),
       ),

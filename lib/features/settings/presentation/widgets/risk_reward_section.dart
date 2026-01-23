@@ -62,7 +62,7 @@ class RiskRewardSection extends StatelessWidget {
           const ListTile(
             title: Text('Max Portfolio Risk'),
             subtitle: Text('Total open risk limit'),
-            trailing: _LockedText(value: '6%'),
+            trailing: _LockedText(value: '3%'),
           ),
 
           const Divider(),

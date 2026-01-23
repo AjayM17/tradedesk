@@ -9,7 +9,7 @@ class DashboardService {
 
   // 🔒 TEMP: move to Settings later
   static const double totalCapital = 1000000; // ₹10,00,000
-  static const double maxPortfolioRiskPercent = 0.06; // 6%
+  static const double maxPortfolioRiskPercent = 0.03; // 3%
 
   DashboardService(this._tradeService);
 

@@ -4,7 +4,7 @@ import 'settings_storage.dart';
 class SettingsState extends ChangeNotifier {
   final SettingsStorage _storage = SettingsStorage();
 static const double defaultCapital = 1000000;
-static const double defaultRiskPercent = 1.0;
+static const double defaultRiskPercent = 0.5;
 static const double defaultMaxCapitalPerStock = 5.0;
 
   // ---------------------------

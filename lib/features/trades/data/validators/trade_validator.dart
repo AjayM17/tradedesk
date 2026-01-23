@@ -4,7 +4,7 @@ import '../models/trade_validation_result.dart';
 import 'dart:math';
 
 class TradeValidator {
-  static const double maxPortfolioRiskPercent = 6.0;
+  static const double maxPortfolioRiskPercent = 3.0;
 
   // =========================================================
   // SINGLE TRADE VALIDATION (UNCHANGED)

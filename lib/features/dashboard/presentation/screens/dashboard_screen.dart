@@ -57,7 +57,7 @@ class DashboardScreen extends StatelessWidget {
                       Expanded(
                         child: SummaryCard(
                           icon: Icons.trending_down,
-                          title: 'Loss Amount',
+                          title: 'Risk Amount',
                           value: '₹${data.lossAmount.toStringAsFixed(0)}',
                           valueColor: AppTheme.danger,
                         ),
