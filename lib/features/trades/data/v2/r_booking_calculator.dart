@@ -8,6 +8,10 @@ class RBookingCalculator {
     double minPercent = 0.25,
   }) {
     final qty = (trade.quantity * minPercent).floor();
-    return qty <= 0 ? 0 : qty;
+    return qty <= 0 ? 1 : qty;
   }
+
+  static double calculateTargetPrice({required TradeModel trade}) {
+  return trade.entryPrice + (2 * trade.rValue);
+}
 }

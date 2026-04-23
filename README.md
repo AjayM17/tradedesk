@@ -52,7 +52,7 @@ Risk per trade (%)
 
 Max capital per stock (%)
 
-Portfolio risk cap ≤ 3%
+Portfolio risk cap ≤ 5%
 
 Stop-loss cannot be bypassed
 

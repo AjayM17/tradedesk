@@ -9,13 +9,12 @@ class DashboardService {
 
   // 🔒 TEMP: move to Settings later
   static const double totalCapital = 1000000; // ₹10,00,000
-  static const double maxPortfolioRiskPercent = 0.03; // 3%
+  static const double maxPortfolioRiskPercent = 0.05; // 5%
 
   DashboardService(this._tradeService);
 
   Future<DashboardMetrics> loadMetrics() async {
-    final List<TradeUiModel> trades =
-        await _tradeService.getTradesOnce();
+    final List<TradeUiModel> trades = await _tradeService.getTradesOnce();
 
     double lossAmount = 0;
     double riskUsed = 0;
@@ -51,11 +50,9 @@ class DashboardService {
       }
     }
 
-    final double maxRisk =
-        totalCapital * maxPortfolioRiskPercent;
+    final double maxRisk = totalCapital * maxPortfolioRiskPercent;
 
-    final double remainingRisk =
-        (maxRisk - riskUsed).clamp(0, maxRisk);
+    final double remainingRisk = (maxRisk - riskUsed).clamp(0, maxRisk);
 
     return DashboardMetrics(
       lossAmount: lossAmount,
@@ -64,5 +61,18 @@ class DashboardService {
       tradesInProfit: tradesInProfit,
       tradesInLoss: tradesInLoss,
     );
+  }
+
+  Future<List<TradeUiModel>> loadLast100Trades() async {
+    return _tradeService.getLast100ClosedTrades();
+  }
+
+  double calculateWinRate(List<TradeUiModel> trades) {
+
+    if (trades.isEmpty) return 0;
+
+    final wins = trades.where((t) => t.pnlValue > 0).length;
+
+    return (wins / trades.length) * 100;
   }
 }

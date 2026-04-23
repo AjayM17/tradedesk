@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:trade_desk/features/trades/data/services/trade_firestore_service.dart';
+import 'package:trade_desk/features/trades/data/v2/r_booking_calculator.dart';
 import 'package:trade_desk/features/trades/data/v2/trade_v2_executor.dart';
 import 'package:trade_desk/features/trades/data/validators/trade_v2_addon_validator.dart';
 import 'package:trade_desk/features/trades/presentation/screens/create_trade_screen.dart';
@@ -50,212 +51,137 @@ class TradeCard extends StatelessWidget {
     final int rCount = _rBookingCount();
     final int addOnCount = _addOnCount();
     final lastKind = _lastActionKind();
+    final double targetPrice = RBookingCalculator.calculateTargetPrice(
+      trade: t,
+    );
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ───────── HEADER ─────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    _StatusIcon(status: trade.status),
-                    const SizedBox(width: 6),
-                    Text(
-                      trade.name,
-                      style: textTheme.titleSmall!
-                          .copyWith(fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-                Text(
-                  'Actions ${trade.actions.length}/4',
-                  style: textTheme.bodySmall!.copyWith(
-                    color: const Color(0xFF6B7280),
+    final int t1Qty = RBookingCalculator.calculateQty(trade: t);
+
+    return GestureDetector(
+      onTap: () => _showActionSheet(context),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ───────── HEADER ─────────
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      _StatusIcon(status: trade.status),
+                      const SizedBox(width: 6),
+                      Text(
+                        trade.name,
+                        style: textTheme.titleSmall!.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-
-            // ───────── KEY METRICS ─────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _metric('Qty', t.quantity),
-                _metric(
-                  'Buy (Avg)',
-                  trade.averageBuyPrice.toStringAsFixed(2),
-                ),
-                _metric('SL', t.stopLoss),
-              ],
-            ),
-
-            const SizedBox(height: 8),
-
-            // ───────── SECONDARY INFO ─────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _smallKv('Init SL', t.initialStopLoss),
-                _smallKv(
-                  'Invested',
-                  '₹${trade.investedAmount.toStringAsFixed(0)}',
-                ),
-                _smallKv('Age', '${trade.ageInDays}d'),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-
-            // ───────── P&L ─────────
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: isProfit
-                    ? AppTheme.success.withOpacity(0.08)
-                    : AppTheme.danger.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(6),
+                  // Text(
+                  //   'Actions ${trade.actions.length}/4',
+                  //   style: textTheme.bodySmall!.copyWith(
+                  //     color: const Color(0xFF6B7280),
+                  //   ),
+                  // ),
+                ],
               ),
-              child: Text(
-                'P&L: ${trade.pnlValue.toStringAsFixed(0)} '
-                '(${trade.pnlPercent.toStringAsFixed(1)}%)',
-                style: TextStyle(
-                  color: isProfit
-                      ? AppTheme.success
-                      : AppTheme.danger,
-                  fontWeight: FontWeight.w700,
-                ),
+
+              const SizedBox(height: 10),
+
+              // ───────── KEY METRICS ─────────
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _metric('Qty', t.quantity),
+                  _metric(
+                    'Buy (Avg)',
+                    trade.averageBuyPrice.toStringAsFixed(2),
+                  ),
+                  _metric('SL', t.stopLoss),
+                ],
               ),
-            ),
 
-            const SizedBox(height: 8),
+              const SizedBox(height: 8),
 
-            // ───────── ACTION HISTORY ─────────
-            _actionSummaries(),
+              // ───────── SECONDARY INFO ─────────
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _smallKv('Init SL', t.initialStopLoss),
+                  _smallKv(
+                    'Invested',
+                    '₹${trade.investedAmount.toStringAsFixed(0)}',
+                  ),
+                  _smallKv('Age', '${trade.ageInDays}d'),
+                ],
+              ),
 
-            const Divider(height: 20),
+              const SizedBox(height: 10),
 
-            // ───────── ACTION BAR ─────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Utility
-                Row(
-                  children: [
-                    TextButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                CreateTradeScreen(trade: trade),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.edit, size: 16),
-                      label: const Text('Edit'),
+              // ───────── P&L ─────────
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  /// P&L (Colored Background)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
                     ),
-                    TextButton.icon(
-                      onPressed: () => _confirmDelete(context),
-                      icon: const Icon(
-                        Icons.delete,
-                        size: 16,
-                        color: Colors.red,
+                    decoration: BoxDecoration(
+                      color: isProfit
+                          ? AppTheme.success.withOpacity(0.08)
+                          : AppTheme.danger.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'P&L: ₹${trade.pnlValue.toStringAsFixed(0)} '
+                      '(${trade.pnlPercent.toStringAsFixed(1)}%)',
+                      style: TextStyle(
+                        color: isProfit ? AppTheme.success : AppTheme.danger,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
                       ),
-                      label: const Text(
-                        'Delete',
-                        style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+
+                  const Spacer(),
+
+                  /// Target + Qty (Plain — No Background)
+                  if (trade.actions.isEmpty) ...[
+                    Text(
+                      '🎯 ₹${targetPrice.toStringAsFixed(0)}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Sell: $t1Qty',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
-                ),
-
-                // Strategy buttons
-                Row(
-                  children: [
-                    if (trade.actions.isEmpty)
-                      TextButton(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (_) =>
-                                RBookingV2Dialog(trade: t),
-                          );
-                        },
-                        child: const Text('Book R1'),
-                      ),
-
-                    if (rCount == 1 &&
-                        addOnCount == 0 &&
-                        lastKind == TradeActionKind.rBooking)
-                      TextButton(
-                        onPressed: () {
-                          final result =
-                              TradeV2AddOnValidator.canOpenAddOn(
-                            trade: t,
-                          );
-
-                          if (!result.isAllowed) {
-                            _showInfoAlert(
-                              context,
-                              result.reason!,
-                            );
-                            return;
-                          }
-
-                          final maxAddOnQty =
-                              (_originalQuantity() * 0.25).floor();
-
-                          showDialog(
-                            context: context,
-                            builder: (_) => AddOnV2Dialog(
-                              trade: t,
-                              maxAddOnQty: maxAddOnQty,
-                            ),
-                          );
-                        },
-                        child: const Text('Add-On'),
-                      ),
-
-                    if (rCount == 1 &&
-                        addOnCount == 1 &&
-                        lastKind == TradeActionKind.addOn)
-                      TextButton(
-                        onPressed: () {
-                          _showInfoAlert(
-                            context,
-                            'R2 booking will be available in next phase.',
-                          );
-                        },
-                        child: const Text('Book R2'),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-
-            // ───────── UNDO ─────────
-            if (trade.actions.isNotEmpty)
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () => _confirmUndo(context),
-                  icon: const Icon(Icons.undo, size: 16),
-                  label: const Text('Undo Last Action'),
-                ),
+                ],
               ),
-          ],
+
+              const SizedBox(height: 8),
+
+              // ───────── ACTION HISTORY ─────────
+              _actionSummaries(),
+
+              // const Divider(height: 20),
+            ],
+          ),
         ),
       ),
     );
@@ -275,6 +201,159 @@ class TradeCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _showActionSheet(BuildContext context) {
+    final t = trade.trade;
+    final rCount = _rBookingCount();
+    final addOnCount = _addOnCount();
+    final lastKind = _lastActionKind();
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                /// 🔒 IF CLOSED → ONLY DELETE
+                if (trade.status == TradeStatus.closed) ...[
+                  ListTile(
+                    leading: const Icon(Icons.delete, color: Colors.red),
+                    title: const Text('Delete Trade'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _confirmDelete(context);
+                    },
+                  ),
+                ] else ...[
+                  /// EDIT
+                  ListTile(
+                    leading: const Icon(Icons.edit),
+                    title: const Text('Edit Trade'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CreateTradeScreen(trade: trade),
+                        ),
+                      );
+                    },
+                  ),
+
+                  /// DELETE
+                  ListTile(
+                    leading: const Icon(Icons.delete, color: Colors.red),
+                    title: const Text('Delete Trade'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _confirmDelete(context);
+                    },
+                  ),
+
+                  /// R BOOKING
+                  if (trade.actions.isEmpty)
+                    ListTile(
+                      leading: const Icon(
+                        Icons.emoji_events,
+                        color: Colors.orange,
+                      ),
+                      title: const Text('Book T1'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        showDialog(
+                          context: context,
+                          builder: (_) => RBookingV2Dialog(trade: t),
+                        );
+                      },
+                    ),
+
+                  /// ADD ON
+                  if (rCount == 1 &&
+                      addOnCount == 0 &&
+                      lastKind == TradeActionKind.rBooking)
+                    ListTile(
+                      leading: const Icon(Icons.add_circle, color: Colors.blue),
+                      title: const Text('Add-On'),
+                      onTap: () {
+                        Navigator.pop(context);
+
+                        final result = TradeV2AddOnValidator.canOpenAddOn(
+                          trade: t,
+                        );
+
+                        if (!result.isAllowed) {
+                          _showInfoAlert(context, result.reason!);
+                          return;
+                        }
+
+                        final maxAddOnQty = (_originalQuantity() * 0.25)
+                            .floor();
+
+                        showDialog(
+                          context: context,
+                          builder: (_) =>
+                              AddOnV2Dialog(trade: t, maxAddOnQty: maxAddOnQty),
+                        );
+                      },
+                    ),
+
+                  /// BOOK R2
+                  if (rCount == 1 &&
+                      addOnCount == 1 &&
+                      lastKind == TradeActionKind.addOn)
+                    ListTile(
+                      leading: const Icon(Icons.flag, color: Colors.purple),
+                      title: const Text('Book R2'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showInfoAlert(
+                          context,
+                          'R2 booking will be available in next phase.',
+                        );
+                      },
+                    ),
+
+                  /// MARK COMPLETE
+                  if (trade.status == TradeStatus.active)
+                    ListTile(
+                      leading: const Icon(
+                        Icons.check_circle,
+                        color: Colors.green,
+                      ),
+                      title: const Text('Mark Complete'),
+                      onTap: () async {
+                        Navigator.pop(context);
+                        await TradeFirestoreService().updateTradeStatus(
+                          tradeId: trade.id,
+                          status: TradeStatus.closed,
+                        );
+                      },
+                    ),
+
+                  /// UNDO
+                  if (trade.actions.isNotEmpty)
+                    ListTile(
+                      leading: const Icon(Icons.undo),
+                      title: const Text('Undo Last Action'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _confirmUndo(context);
+                      },
+                    ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -330,8 +409,7 @@ class TradeCard extends StatelessWidget {
 
     if (confirmed != true) return;
 
-    final reverted =
-        TradeV2Executor.undoLastAction(trade: trade.trade);
+    final reverted = TradeV2Executor.undoLastAction(trade: trade.trade);
 
     final lastAction = trade.trade.actions.last;
 
@@ -389,51 +467,45 @@ class TradeCard extends StatelessWidget {
 
   // ───────── UI HELPERS ─────────
   Widget _metric(String label, dynamic value) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF6B7280),
-            ),
-          ),
-          Text(
-            '$value',
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      );
-
-  Widget _smallKv(String label, dynamic value) => Text(
-        '$label: $value',
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
         style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w500,
           color: Color(0xFF6B7280),
         ),
-      );
+      ),
+      Text(
+        '$value',
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+      ),
+    ],
+  );
+
+  Widget _smallKv(String label, dynamic value) => Text(
+    '$label: $value',
+    style: const TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w500,
+      color: Color(0xFF6B7280),
+    ),
+  );
 
   Widget _iconRow(IconData icon, Color color, String text) => Padding(
-        padding: const EdgeInsets.only(top: 2),
-        child: Row(
-          children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 6),
-            Text(
-              text,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+    padding: const EdgeInsets.only(top: 2),
+    child: Row(
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
         ),
-      );
+      ],
+    ),
+  );
 }
 
 // ───────── STATUS ICON ─────────

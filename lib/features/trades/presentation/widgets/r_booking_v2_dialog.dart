@@ -24,7 +24,7 @@ class _RBookingV2DialogState extends State<RBookingV2Dialog> {
     super.initState();
 
     sellQty = RBookingCalculator.calculateQty(trade: widget.trade);
-    targetPrice = widget.trade.entryPrice + widget.trade.rValue;
+    targetPrice = RBookingCalculator.calculateTargetPrice(trade: widget.trade);
 
     _priceCtrl = TextEditingController(
       text: targetPrice.toStringAsFixed(2),
@@ -39,7 +39,7 @@ class _RBookingV2DialogState extends State<RBookingV2Dialog> {
 
   @override
   Widget build(BuildContext context) {
-    final expectedProfit = sellQty * widget.trade.rValue;
+    final expectedProfit = sellQty * (2*widget.trade.rValue);
 
     return AlertDialog(
       title: const Text('Confirm R1 Booking'),

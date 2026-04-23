@@ -9,16 +9,20 @@ class TradeFirestoreService {
   // ─────────────────────────────────────────────
   // READ (STREAM)
   // ─────────────────────────────────────────────
-  Stream<List<TradeUiModel>> getTrades() {
-    return _firestore.collection('holdings').snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) {
-        return TradeFirestoreDto(
-          id: doc.id,
-          data: doc.data(),
-        ).toUiModel();
-      }).toList();
-    });
-  }
+Stream<List<TradeUiModel>> getTradesByStatus(TradeStatus status) {
+  return _firestore
+      .collection('holdings')
+      .where('status', isEqualTo: status.name)
+      .snapshots()
+      .map((snapshot) {
+    return snapshot.docs.map((doc) {
+      return TradeFirestoreDto(
+        id: doc.id,
+        data: doc.data(),
+      ).toUiModel();
+    }).toList();
+  });
+}
 
   // ─────────────────────────────────────────────
   // READ (ONCE)
@@ -27,26 +31,19 @@ class TradeFirestoreService {
     final snapshot = await _firestore.collection('holdings').get();
 
     return snapshot.docs.map((doc) {
-      return TradeFirestoreDto(
-        id: doc.id,
-        data: doc.data(),
-      ).toUiModel();
+      return TradeFirestoreDto(id: doc.id, data: doc.data()).toUiModel();
     }).toList();
   }
 
   // ─────────────────────────────────────────────
   // CREATE / UPDATE (V1 + BASE DATA)
   // ─────────────────────────────────────────────
-Future<void> updateTrade({
-  required String tradeId,
-  required TradeDTO trade,
-}) async {
-  await _firestore
-      .collection('holdings')
-      .doc(tradeId)
-      .update(trade.toMap());
-}
-
+  Future<void> updateTrade({
+    required String tradeId,
+    required TradeDTO trade,
+  }) async {
+    await _firestore.collection('holdings').doc(tradeId).update(trade.toMap());
+  }
 
   // ─────────────────────────────────────────────
   // V2: UPDATE TRADE FIELDS (EXECUTOR RESULT)
@@ -57,10 +54,7 @@ Future<void> updateTrade({
   }) async {
     fields['updated_at'] = DateTime.now().toIso8601String();
 
-    await _firestore
-        .collection('holdings')
-        .doc(tradeId)
-        .update(fields);
+    await _firestore.collection('holdings').doc(tradeId).update(fields);
   }
 
   // ─────────────────────────────────────────────
@@ -70,10 +64,7 @@ Future<void> updateTrade({
     required String tradeId,
     required Map<String, dynamic> log,
   }) async {
-    await _firestore
-        .collection('holdings')
-        .doc(tradeId)
-        .update({
+    await _firestore.collection('holdings').doc(tradeId).update({
       'actions': FieldValue.arrayUnion([log]),
       'updated_at': DateTime.now().toIso8601String(),
     });
@@ -83,23 +74,44 @@ Future<void> updateTrade({
   // DELETE
   // ─────────────────────────────────────────────
   Future<void> deleteTrade(String tradeId) async {
-    await _firestore
-        .collection('holdings')
-        .doc(tradeId)
-        .delete();
+    await _firestore.collection('holdings').doc(tradeId).delete();
   }
 
-
   Future<void> undoLastAction({
-  required String tradeId,
-  required Map<String, dynamic> updatedTradeFields,
-  required Map<String, dynamic> lastActionMap,
-}) async {
-  await _firestore.collection('holdings').doc(tradeId).update({
-    ...updatedTradeFields,
-    'actions': FieldValue.arrayRemove([lastActionMap]),
-    'updated_at': DateTime.now().toIso8601String(),
-  });
-}
+    required String tradeId,
+    required Map<String, dynamic> updatedTradeFields,
+    required Map<String, dynamic> lastActionMap,
+  }) async {
+    await _firestore.collection('holdings').doc(tradeId).update({
+      ...updatedTradeFields,
+      'actions': FieldValue.arrayRemove([lastActionMap]),
+      'updated_at': DateTime.now().toIso8601String(),
+    });
+  }
 
+  Future<void> updateTradeStatus({
+    required String tradeId,
+    required TradeStatus status,
+  }) async {
+    await _firestore.collection('holdings').doc(tradeId).update({
+      'status': status.name,
+      'closedAt': FieldValue.serverTimestamp(),
+      'updated_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+Future<List<TradeUiModel>> getLast100ClosedTrades() async {
+  final snapshot = await _firestore
+      .collection('holdings')
+      .where('status', isEqualTo: 'closed')
+      .limit(100)
+      .get();
+
+  return snapshot.docs.map((doc) {
+    return TradeFirestoreDto(
+      id: doc.id,
+      data: doc.data(),
+    ).toUiModel();
+  }).toList();
+}
 }

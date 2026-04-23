@@ -23,7 +23,7 @@ class PartialProfitCard extends StatelessWidget {
           ListTile(
             title: Text('Profit Booking'),
             subtitle: Text(
-              'Mandatory partial at +1R',
+              'Mandatory partial at +2R',
             ),
             trailing: Icon(Icons.lock),
           ),
@@ -39,7 +39,7 @@ class PartialProfitCard extends StatelessWidget {
 
           // PURPOSE OF R1
           ListTile(
-            title: Text('Purpose of R1'),
+            title: Text('Purpose of T1'),
             subtitle: Text(
               'Reduces risk and improves psychological stability',
             ),
@@ -48,7 +48,7 @@ class PartialProfitCard extends StatelessWidget {
 
           // POST R1 MANAGEMENT
           ListTile(
-            title: Text('Post-R1 Management'),
+            title: Text('Post-T1 Management'),
             subtitle: Text(
               'Remaining position managed only by structure or Weekly 20 EMA',
             ),

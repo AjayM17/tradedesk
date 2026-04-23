@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:trade_desk/features/dashboard/presentation/data/models/dashboard_metrics.dart';
 import 'package:trade_desk/features/dashboard/presentation/data/services/dashboard_service.dart';
+import 'package:trade_desk/features/trades/presentation/models/trade_ui_model.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/ui/app_page_layout.dart';
@@ -14,8 +15,7 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dashboardService =
-        DashboardService(TradeFirestoreService());
+    final dashboardService = DashboardService(TradeFirestoreService());
 
     return Scaffold(
       appBar: AppBar(
@@ -31,16 +31,12 @@ class DashboardScreen extends StatelessWidget {
           builder: (context, snapshot) {
             // ───────── LOADING ─────────
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
+              return const Center(child: CircularProgressIndicator());
             }
 
             // ───────── EMPTY / ERROR ─────────
             if (!snapshot.hasData) {
-              return const Center(
-                child: Text('No data available'),
-              );
+              return const Center(child: Text('No data available'));
             }
 
             final data = snapshot.data!;
@@ -67,8 +63,7 @@ class DashboardScreen extends StatelessWidget {
                         child: SummaryCard(
                           icon: Icons.shield_outlined,
                           title: 'Remaining Risk',
-                          value:
-                              '₹${data.remainingRisk.toStringAsFixed(0)}',
+                          value: '₹${data.remainingRisk.toStringAsFixed(0)}',
                         ),
                       ),
                     ],
@@ -104,6 +99,85 @@ class DashboardScreen extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  FutureBuilder<List<TradeUiModel>>(
+                    future: dashboardService.loadLast100Trades(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const SizedBox();
+                      }
+
+                      final trades = snapshot.data!;
+                      final winRate = dashboardService.calculateWinRate(trades);
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          /// Section Title
+                          const Text(
+                            'Last 100 Closed Trades',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          /// Win Rate Card
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              color: Colors.grey.shade100,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Win Rate',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                                Text(
+                                  '${winRate.toStringAsFixed(1)}%',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: winRate >= 50
+                                        ? AppTheme.success
+                                        : AppTheme.danger,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          /// Trade List
+                          ...trades.take(10).map((trade) {
+                            final isProfit = trade.pnlValue >= 0;
+
+                            return ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(trade.name),
+                              trailing: Text(
+                                '₹${trade.pnlValue.toStringAsFixed(0)}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: isProfit
+                                      ? AppTheme.success
+                                      : AppTheme.danger,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
