@@ -15,6 +15,8 @@ class TradeModel {
   // ───────── ACTIONS (SOURCE OF TRUTH) ─────────
   final List<TradeActionLog> actions;
 
+  final bool partialBooked;
+
   const TradeModel({
     required this.tradeId,
     required this.entryPrice,
@@ -23,6 +25,7 @@ class TradeModel {
     required this.initialStopLoss,
     required this.rValue,
     this.actions = const [],
+     this.partialBooked = false,
   });
 
   // ───────── COUNTS ─────────
@@ -77,6 +80,7 @@ class TradeModel {
     double? stopLoss,
     int? quantity,
     List<TradeActionLog>? actions,
+     bool? partialBooked,
   }) {
     return TradeModel(
       tradeId: tradeId,
@@ -86,6 +90,7 @@ class TradeModel {
       initialStopLoss: initialStopLoss,
       rValue: rValue,
       actions: actions ?? this.actions,
+       partialBooked: partialBooked ?? this.partialBooked,
     );
   }
 }

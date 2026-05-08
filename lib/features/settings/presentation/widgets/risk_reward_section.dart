@@ -48,13 +48,14 @@ class RiskRewardSection extends StatelessWidget {
           const Divider(),
 
           // Risk per Trade (Locked)
-          ListTile(
-            title: const Text('Risk per Trade'),
-            subtitle: const Text('Fixed maximum loss'),
-            trailing: _locked(
-              '$riskPercent% • ${indianCurrencyFormat.format(riskAmount)}',
-            ),
-          ),
+       ListTile(
+  title: const Text('Risk per Trade'),
+  subtitle: Text(
+    '${riskPercent.toStringAsFixed(2)}% • ${indianCurrencyFormat.format(riskAmount)}',
+  ),
+  trailing: _editable('${riskPercent.toStringAsFixed(2)}%'),
+  onTap: () => _editRiskPercent(context, riskPercent),
+),
 
           const Divider(),
 
@@ -104,6 +105,68 @@ class RiskRewardSection extends StatelessWidget {
   }
 
   // ---------- Editors ----------
+
+  void _editRiskPercent(BuildContext context, double current) {
+  final controller =
+      TextEditingController(text: current.toStringAsFixed(2));
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    builder: (ctx) {
+      return Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          MediaQuery.of(ctx).viewInsets.bottom + 16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Edit Risk per Trade (%)',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                suffixText: '%',
+                border: OutlineInputBorder(),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            ElevatedButton(
+              onPressed: () {
+                final value = double.tryParse(controller.text);
+
+                if (value == null || value <= 0 || value > 5) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(
+                      content: Text('Enter value between 0.1% – 5%'),
+                    ),
+                  );
+                  return;
+                }
+
+                ctx.read<SettingsState>()
+                    .updateRiskPerTradePercent(value);
+
+                Navigator.pop(ctx);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
 
   void _editCapital(BuildContext context, double current) {
     final controller =

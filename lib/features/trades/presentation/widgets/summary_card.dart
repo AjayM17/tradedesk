@@ -21,46 +21,32 @@ class SummaryCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Card(
-      elevation: 0, // 🔥 flatter look
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 10,
-          vertical: 8,
-        ), // 🔥 reduced padding
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// 🔹 Title Row (compact)
             Row(
               children: [
                 Icon(
                   icon,
-                  size: 14, // 🔥 smaller
+                  size: 18,
                   color: colorScheme.onSurfaceVariant,
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 Text(
                   title,
-                  style: textTheme.labelSmall?.copyWith(
+                  style: textTheme.labelLarge?.copyWith(
                     color: colorScheme.onSurfaceVariant,
-                    fontSize: 11, // 🔥 smaller
                   ),
                 ),
               ],
             ),
-
-            const SizedBox(height: 6), // 🔥 reduced
-
-            /// 🔹 Value
+            const SizedBox(height: 16),
             Text(
               value,
-              style: textTheme.titleMedium?.copyWith(
+              style: textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
-                fontSize: 14, // 🔥 compact
                 color: valueColor ?? colorScheme.onSurface,
               ),
             ),

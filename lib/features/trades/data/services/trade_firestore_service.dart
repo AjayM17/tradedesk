@@ -114,4 +114,15 @@ Future<List<TradeUiModel>> getLast100ClosedTrades() async {
     ).toUiModel();
   }).toList();
 }
+
+
+Future<void> updatePartialBooked({
+  required String tradeId,
+  required bool value,
+}) async {
+  await _firestore.collection('holdings').doc(tradeId).update({
+    'partialBooked': value,
+    'updated_at': DateTime.now().toIso8601String(),
+  });
+}
 }

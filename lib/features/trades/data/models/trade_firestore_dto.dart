@@ -22,15 +22,16 @@ class TradeFirestoreDto {
         )
         .toList();
 
-    final trade = TradeModel(
-      tradeId: id,
-      entryPrice: entry,
-      stopLoss: sl,
-      quantity: qty,
-      initialStopLoss: initSl,
-      rValue: (entry - initSl).abs(),
-      actions: actions,
-    );
+final trade = TradeModel(
+  tradeId: id,
+  entryPrice: entry,
+  stopLoss: sl,
+  quantity: qty,
+  initialStopLoss: initSl,
+  rValue: (entry - initSl).abs(),
+  actions: actions,
+  partialBooked: data['partialBooked'] ?? false, // ✅ ADD THIS
+);
 
     // ─────────────────────────────────────
     // 🔹 RECONSTRUCT BUY SIDE (COST BASIS)

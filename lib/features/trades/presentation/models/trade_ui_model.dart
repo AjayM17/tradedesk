@@ -32,6 +32,7 @@ class TradeUiModel {
   List<TradeActionLog> get actions => trade.actions;
 
   bool get isLocked => trade.actions.length >= 4;
+  bool get partialBooked => trade.partialBooked;
 
   // ───────── ENTRY / BUY LOGIC ─────────
 
@@ -93,4 +94,6 @@ class TradeUiModel {
 
     return riskPerUnit * quantity;
   }
+
+  double get entryPrice => trade.entryPrice;
 }

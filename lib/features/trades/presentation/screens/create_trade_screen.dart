@@ -56,12 +56,21 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
 
   double get investment => entry * qty;
 
-  double get riskPerShare {
-    final r = entry - sl;
-    return r > 0 ? r : 0;
-  }
+ double get riskPerShare {
+  final r = entry - initialSl; // 🔥 FIXED
+  return r > 0 ? r : 0;
+}
 
   double get riskValue => riskPerShare * qty;
+
+  double get riskPercentPerTrade {
+  if (entry <= 0 || initialSl <= 0) return 0;
+
+  final diff = entry - initialSl;
+  if (diff <= 0) return 0;
+
+  return (diff / entry) * 100;
+}
 
   // ───────── Quantity rules ─────────
   int get maxQtyByCapital {
@@ -161,13 +170,13 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
     });
   }
 
-  void _onRiskInputsChanged() {
-    if (entry > 0 && sl > 0 && entry > sl) {
-      _recalculatePortfolioQty();
-    } else {
-      setState(() => _maxQtyByPortfolio = maxQtyByCapital);
-    }
+void _onRiskInputsChanged() {
+  if (entry > 0 && initialSl > 0 && entry > initialSl) {
+    _recalculatePortfolioQty();
+  } else {
+    setState(() => _maxQtyByPortfolio = maxQtyByCapital);
   }
+}
 
   // ───────── Save ─────────
   Future<void> _save() async {
@@ -279,6 +288,7 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
               'Initial Stop Loss',
               enabled: updateInitialSl,
             ),
+               _infoPercent('Risk %', riskPercentPerTrade),
             _quantityField(),
             _limitsInfo(),
             _info('Investment', investment),
@@ -297,6 +307,14 @@ class _CreateTradeScreenState extends State<CreateTradeScreen> {
   }
 
   // ───────── Widgets ─────────
+
+  Widget _infoPercent(String label, double value) => Padding(
+  padding: const EdgeInsets.symmetric(vertical: 4),
+  child: Text(
+    '$label: ${value.toStringAsFixed(2)}%',
+    style: const TextStyle(fontWeight: FontWeight.w600),
+  ),
+);
 
   Widget _quantityField() {
     return Padding(

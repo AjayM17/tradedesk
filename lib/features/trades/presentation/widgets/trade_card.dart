@@ -83,6 +83,15 @@ class TradeCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (trade.partialBooked)
+                    const Tooltip(
+                      message: 'Partial Booked',
+                      child: Icon(
+                        Icons.emoji_events,
+                        color: Colors.orange,
+                        size: 18,
+                      ),
+                    ),
                   // Text(
                   //   'Actions ${trade.actions.length}/4',
                   //   style: textTheme.bodySmall!.copyWith(
@@ -99,10 +108,7 @@ class TradeCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _metric('Qty', t.quantity),
-                  _metric(
-                    'Buy (Avg)',
-                    trade.averageBuyPrice.toStringAsFixed(2),
-                  ),
+                  _metric('Buy', trade.averageBuyPrice.toStringAsFixed(2)),
                   _metric('SL', t.stopLoss),
                 ],
               ),
@@ -118,7 +124,12 @@ class TradeCard extends StatelessWidget {
                     'Invested',
                     '₹${trade.investedAmount.toStringAsFixed(0)}',
                   ),
-                  _smallKv('Age', '${trade.ageInDays}d'),
+             _smallKv(
+  'Age',
+  trade.ageInDays < 7
+      ? '${trade.ageInDays}d'
+      : '${(trade.ageInDays / 7).floor()}w',
+)
                 ],
               ),
 
@@ -154,23 +165,23 @@ class TradeCard extends StatelessWidget {
                   const Spacer(),
 
                   /// Target + Qty (Plain — No Background)
-                  if (trade.actions.isEmpty) ...[
-                    Text(
-                      '🎯 ₹${targetPrice.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Sell: $t1Qty',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                  // if (trade.actions.isEmpty) ...[
+                  //   Text(
+                  //     '🎯 ₹${targetPrice.toStringAsFixed(0)}',
+                  //     style: const TextStyle(
+                  //       fontSize: 13,
+                  //       fontWeight: FontWeight.w600,
+                  //     ),
+                  //   ),
+                  //   const SizedBox(width: 12),
+                  //   Text(
+                  //     'Sell: $t1Qty',
+                  //     style: const TextStyle(
+                  //       fontSize: 13,
+                  //       fontWeight: FontWeight.w600,
+                  //     ),
+                  //   ),
+                  // ],
                 ],
               ),
 
@@ -261,19 +272,40 @@ class TradeCard extends StatelessWidget {
                   /// R BOOKING
                   if (trade.actions.isEmpty)
                     ListTile(
-                      leading: const Icon(
-                        Icons.emoji_events,
-                        color: Colors.orange,
+                      leading: Icon(
+                        trade.partialBooked ? Icons.undo : Icons.emoji_events,
+                        color: trade.partialBooked
+                            ? Colors.grey
+                            : Colors.orange,
                       ),
-                      title: const Text('Book T1'),
-                      onTap: () {
+                      title: Text(
+                        trade.partialBooked
+                            ? 'Undo Partial Book'
+                            : 'Partial Book',
+                      ),
+                      onTap: () async {
                         Navigator.pop(context);
-                        showDialog(
-                          context: context,
-                          builder: (_) => RBookingV2Dialog(trade: t),
+
+                        await TradeFirestoreService().updatePartialBooked(
+                          tradeId: trade.id,
+                          value: !trade.partialBooked, // 🔁 toggle
                         );
                       },
                     ),
+                  // ListTile(
+                  //   leading: const Icon(
+                  //     Icons.emoji_events,
+                  //     color: Colors.orange,
+                  //   ),
+                  //   title: const Text('Book T1'),
+                  //   onTap: () {
+                  //     Navigator.pop(context);
+                  //     showDialog(
+                  //       context: context,
+                  //       builder: (_) => RBookingV2Dialog(trade: t),
+                  //     );
+                  //   },
+                  // ),
 
                   /// ADD ON
                   if (rCount == 1 &&
@@ -322,21 +354,21 @@ class TradeCard extends StatelessWidget {
                     ),
 
                   /// MARK COMPLETE
-                  if (trade.status == TradeStatus.active)
-                    ListTile(
-                      leading: const Icon(
-                        Icons.check_circle,
-                        color: Colors.green,
-                      ),
-                      title: const Text('Mark Complete'),
-                      onTap: () async {
-                        Navigator.pop(context);
-                        await TradeFirestoreService().updateTradeStatus(
-                          tradeId: trade.id,
-                          status: TradeStatus.closed,
-                        );
-                      },
-                    ),
+                  // if (trade.status == TradeStatus.active)
+                  //   ListTile(
+                  //     leading: const Icon(
+                  //       Icons.check_circle,
+                  //       color: Colors.green,
+                  //     ),
+                  //     title: const Text('Mark Complete'),
+                  //     onTap: () async {
+                  //       Navigator.pop(context);
+                  //       await TradeFirestoreService().updateTradeStatus(
+                  //         tradeId: trade.id,
+                  //         status: TradeStatus.closed,
+                  //       );
+                  //     },
+                  //   ),
 
                   /// UNDO
                   if (trade.actions.isNotEmpty)

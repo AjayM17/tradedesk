@@ -14,7 +14,7 @@ class _TabsShellState extends State<TabsShell> {
   int _currentIndex = 0;
 
   final _pages = const [
-    DashboardScreen(),    // index 1
+    // DashboardScreen(),    // index 1
     TradesScreen(),       // index 0
     SettingsScreen(),     // index 2
   ];
@@ -27,10 +27,10 @@ class _TabsShellState extends State<TabsShell> {
         currentIndex: _currentIndex,
         onTap: (i) => setState(() => _currentIndex = i),
         items: const [
-              BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
+          //     BottomNavigationBarItem(
+          //   icon: Icon(Icons.dashboard),
+          //   label: 'Dashboard',
+          // ),
           BottomNavigationBarItem(
             icon: Icon(Icons.swap_horiz),
             label: 'Trades',
