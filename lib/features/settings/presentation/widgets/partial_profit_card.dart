@@ -10,49 +10,46 @@ class PartialProfitCard extends StatelessWidget {
         children: const [
           ListTile(
             title: Text(
-              'Partial Profit Rules',
+              'Profit Booking & Exit Rules',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Text(
-              'Single partial for risk & psychological stability',
+              'Scale out profits while letting winners run',
             ),
           ),
+
           Divider(height: 1),
 
-          // MANDATORY R1
           ListTile(
-            title: Text('Profit Booking'),
+            leading: Icon(Icons.looks_one),
+            title: Text('Target 1 (+2R)'),
             subtitle: Text(
-              'Mandatory partial at +2R',
+              'Book 50% of total position',
             ),
-            trailing: Icon(Icons.lock),
           ),
 
-          // FIXED QUANTITY
           ListTile(
-            title: Text('Quantity Booked'),
+            leading: Icon(Icons.looks_two),
+            title: Text('Target 2 (+3R)'),
             subtitle: Text(
-              'Fixed 25% of position',
+              'Book 50% of remaining position',
             ),
-            trailing: Icon(Icons.lock),
           ),
 
-          // PURPOSE OF R1
           ListTile(
-            title: Text('Purpose of T1'),
+            leading: Icon(Icons.trending_up),
+            title: Text('Final Exit'),
             subtitle: Text(
-              'Reduces risk and improves psychological stability',
+              'Trail remaining quantity using Daily 20 EMA',
             ),
-            trailing: Icon(Icons.lock),
           ),
 
-          // POST R1 MANAGEMENT
           ListTile(
-            title: Text('Post-T1 Management'),
+            leading: Icon(Icons.rule),
+            title: Text('Execution Order'),
             subtitle: Text(
-              'Remaining position managed only by structure or Weekly 20 EMA',
+              '2R → 3R → Daily 20 EMA Trail',
             ),
-            trailing: Icon(Icons.lock),
           ),
         ],
       ),

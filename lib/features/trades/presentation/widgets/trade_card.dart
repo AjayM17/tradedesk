@@ -54,7 +54,11 @@ class TradeCard extends StatelessWidget {
     final double targetPrice = RBookingCalculator.calculateTargetPrice(
       trade: t,
     );
+final riskPerShare = trade.averageBuyPrice - t.initialStopLoss;
 
+final target2R = trade.averageBuyPrice + (riskPerShare * 2);
+
+final target3R = trade.averageBuyPrice + (riskPerShare * 3);
     final int t1Qty = RBookingCalculator.calculateQty(trade: t);
 
     return GestureDetector(
@@ -135,55 +139,75 @@ class TradeCard extends StatelessWidget {
 
               const SizedBox(height: 10),
 
-              // ───────── P&L ─────────
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  /// P&L (Colored Background)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isProfit
-                          ? AppTheme.success.withOpacity(0.08)
-                          : AppTheme.danger.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'P&L: ₹${trade.pnlValue.toStringAsFixed(0)} '
-                      '(${trade.pnlPercent.toStringAsFixed(1)}%)',
-                      style: TextStyle(
-                        color: isProfit ? AppTheme.success : AppTheme.danger,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
+         // ───────── P&L + TARGETS ─────────
+Row(
+  crossAxisAlignment: CrossAxisAlignment.center,
+  children: [
+    Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: isProfit
+            ? AppTheme.success.withOpacity(0.08)
+            : AppTheme.danger.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        'P&L: ₹${trade.pnlValue.toStringAsFixed(0)} '
+        '(${trade.pnlPercent.toStringAsFixed(1)}%)',
+        style: TextStyle(
+          color: isProfit ? AppTheme.success : AppTheme.danger,
+          fontWeight: FontWeight.w700,
+          fontSize: 13,
+        ),
+      ),
+    ),
 
-                  const Spacer(),
+    const Spacer(),
 
-                  /// Target + Qty (Plain — No Background)
-                  // if (trade.actions.isEmpty) ...[
-                  //   Text(
-                  //     '🎯 ₹${targetPrice.toStringAsFixed(0)}',
-                  //     style: const TextStyle(
-                  //       fontSize: 13,
-                  //       fontWeight: FontWeight.w600,
-                  //     ),
-                  //   ),
-                  //   const SizedBox(width: 12),
-                  //   Text(
-                  //     'Sell: $t1Qty',
-                  //     style: const TextStyle(
-                  //       fontSize: 13,
-                  //       fontWeight: FontWeight.w600,
-                  //     ),
-                  //   ),
-                  // ],
-                ],
-              ),
+    Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 5,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(.08),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        '2R ₹${target2R.toStringAsFixed(0)}',
+        style: const TextStyle(
+          color: Colors.blue,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+
+    const SizedBox(width: 6),
+
+    Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 5,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.purple.withOpacity(.08),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        '3R ₹${target3R.toStringAsFixed(0)}',
+        style: const TextStyle(
+          color: Colors.purple,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+  ],
+),
 
               const SizedBox(height: 8),
 

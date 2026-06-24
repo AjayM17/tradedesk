@@ -64,6 +64,7 @@ double _calculateCurrentRisk(TradeUiModel trade) {
         riskUsed += _calculateCurrentRisk(trade);
       }
     }
+     final bool isNetProfit = includeProfits && lossAmount > 0;
 
     // Normalize for UI
     if (includeProfits) {
@@ -81,6 +82,7 @@ double _calculateCurrentRisk(TradeUiModel trade) {
       totalTrades: totalTrades,
       tradesInProfit: tradesInProfit,
       tradesInLoss: tradesInLoss,
+      isNetProfit: isNetProfit,
     );
   }
 

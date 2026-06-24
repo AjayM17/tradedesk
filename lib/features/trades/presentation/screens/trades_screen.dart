@@ -213,7 +213,9 @@ class TradesBody extends StatelessWidget {
                           title: 'Risk Amount',
                           value:
                               '₹${data.lossAmount.toStringAsFixed(0)}',
-                          valueColor: Colors.red,
+                           valueColor: includeProfits
+      ? (data.isNetProfit ? Colors.green : Colors.red)
+      : Colors.red,
                         ),
                       ),
                       const SizedBox(width: 12),

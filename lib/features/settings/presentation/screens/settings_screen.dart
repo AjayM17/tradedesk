@@ -5,7 +5,7 @@ import '../widgets/trading_style_card.dart';
 import '../widgets/entry_rules_card.dart';
 import '../widgets/stop_loss_rules_card.dart';
 import '../widgets/partial_profit_card.dart';
-import '../widgets/add_on_rules_card.dart';
+// import '../widgets/add_on_rules_card.dart';
 import '../widgets/final_exit_rules_card.dart';
 import '../widgets/risk_reward_section.dart';
 
@@ -61,7 +61,7 @@ class SettingsScreen extends StatelessWidget {
           // AddOnRulesCard(), 
           // SizedBox(height: 8),
 
-          FinalExitRulesCard(),
+          // FinalExitRulesCard(),
         ],
       ),
     );

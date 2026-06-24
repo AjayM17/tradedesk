@@ -5,6 +5,7 @@ class DashboardMetrics {
   final int totalTrades;
   final int tradesInProfit;
   final int tradesInLoss;
+   final bool isNetProfit;
 
   const DashboardMetrics({
     required this.lossAmount,
@@ -12,5 +13,6 @@ class DashboardMetrics {
     required this.totalTrades,
     required this.tradesInProfit,
     required this.tradesInLoss,
+     this.isNetProfit = false,
   });
 }
