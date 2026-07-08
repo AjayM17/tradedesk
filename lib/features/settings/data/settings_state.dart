@@ -1,41 +1,46 @@
 import 'package:flutter/material.dart';
+
 import 'settings_storage.dart';
 
 class SettingsState extends ChangeNotifier {
   final SettingsStorage _storage = SettingsStorage();
-static const double defaultCapital = 1000000;
-static const double defaultRiskPercent = 0.7;
-static const double defaultMaxCapitalPerStock = 7;
+
+  // ---------------------------
+  // Default Values
+  // ---------------------------
+  static const double defaultCapital = 1000000;
+  static const double defaultRiskPercent = 0.7;
+  static const double defaultMaxCapitalPerStock = 7;
+  static const double defaultTargetR = 3;
 
   // ---------------------------
   // Internal State
   // ---------------------------
-double _totalCapital = defaultCapital;
-double _maxCapitalPerStockPercent = defaultMaxCapitalPerStock;
-double _riskPerTradePercent = defaultRiskPercent;
-
+  double _totalCapital = defaultCapital;
+  double _riskPerTradePercent = defaultRiskPercent;
+  double _maxCapitalPerStockPercent = defaultMaxCapitalPerStock;
+  double _targetR = defaultTargetR;
 
   // ---------------------------
   // Getters
   // ---------------------------
   double get totalCapital => _totalCapital;
 
+  double get riskPerTradePercent => _riskPerTradePercent;
+
   double get maxCapitalPerStockPercent =>
       _maxCapitalPerStockPercent;
 
-  double get riskPerTradePercent =>
-      _riskPerTradePercent;
+  double get targetR => _targetR;
 
   // ---------------------------
-  // Derived Values (DO NOT STORE)
+  // Derived Values
   // ---------------------------
-  double get maxCapitalPerStockAmount =>
-      (_totalCapital * _maxCapitalPerStockPercent) / 100;
-
-  /// ✅ THIS IS WHAT YOU ASKED FOR
-  /// Maximum allowed loss per trade (₹)
   double get riskAmountPerTrade =>
       (_totalCapital * _riskPerTradePercent) / 100;
+
+  double get maxCapitalPerStockAmount =>
+      (_totalCapital * _maxCapitalPerStockPercent) / 100;
 
   // ---------------------------
   // Constructor
@@ -45,14 +50,15 @@ double _riskPerTradePercent = defaultRiskPercent;
   }
 
   // ---------------------------
-  // Load from Local Storage
+  // Load Settings
   // ---------------------------
   Future<void> _load() async {
     _totalCapital = await _storage.loadTotalCapital();
-    _maxCapitalPerStockPercent =
-        await _storage.loadMaxCapitalPerStockPercent();
     _riskPerTradePercent =
         await _storage.loadRiskPerTradePercent();
+    _maxCapitalPerStockPercent =
+        await _storage.loadMaxCapitalPerStockPercent();
+    _targetR = await _storage.loadTargetR();
 
     notifyListeners();
   }
@@ -66,30 +72,44 @@ double _riskPerTradePercent = defaultRiskPercent;
     await _storage.saveTotalCapital(value);
   }
 
-  Future<void> updateMaxCapitalPerStockPercent(double value) async {
-    _maxCapitalPerStockPercent = value;
-    notifyListeners();
-    await _storage.saveMaxCapitalPerStockPercent(value);
-  }
-
   Future<void> updateRiskPerTradePercent(double value) async {
     _riskPerTradePercent = value;
     notifyListeners();
     await _storage.saveRiskPerTradePercent(value);
   }
 
+  Future<void> updateMaxCapitalPerStockPercent(
+    double value,
+  ) async {
+    _maxCapitalPerStockPercent = value;
+    notifyListeners();
+    await _storage.saveMaxCapitalPerStockPercent(value);
+  }
+
+  Future<void> updateTargetR(double value) async {
+    _targetR = value;
+    notifyListeners();
+    await _storage.saveTargetR(value);
+  }
+
+  // ---------------------------
+  // Reset Defaults
+  // ---------------------------
   Future<void> resetToDefaults() async {
-  _totalCapital = defaultCapital;
-  _riskPerTradePercent = defaultRiskPercent;
-  _maxCapitalPerStockPercent = defaultMaxCapitalPerStock;
+    _totalCapital = defaultCapital;
+    _riskPerTradePercent = defaultRiskPercent;
+    _maxCapitalPerStockPercent = defaultMaxCapitalPerStock;
+    _targetR = defaultTargetR;
 
-  notifyListeners();
+    notifyListeners();
 
-  await _storage.saveTotalCapital(_totalCapital);
-  await _storage.saveRiskPerTradePercent(_riskPerTradePercent);
-  await _storage.saveMaxCapitalPerStockPercent(
-    _maxCapitalPerStockPercent,
-  );
-}
-
+    await Future.wait([
+      _storage.saveTotalCapital(_totalCapital),
+      _storage.saveRiskPerTradePercent(_riskPerTradePercent),
+      _storage.saveMaxCapitalPerStockPercent(
+        _maxCapitalPerStockPercent,
+      ),
+      _storage.saveTargetR(_targetR),
+    ]);
+  }
 }

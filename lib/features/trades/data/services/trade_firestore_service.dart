@@ -89,16 +89,23 @@ Stream<List<TradeUiModel>> getTradesByStatus(TradeStatus status) {
     });
   }
 
-  Future<void> updateTradeStatus({
-    required String tradeId,
-    required TradeStatus status,
-  }) async {
-    await _firestore.collection('holdings').doc(tradeId).update({
-      'status': status.name,
-      'closedAt': FieldValue.serverTimestamp(),
-      'updated_at': DateTime.now().toIso8601String(),
-    });
+Future<void> updateTradeStatus({
+  required String tradeId,
+  required TradeStatus status,
+}) async {
+  final Map<String, dynamic> data = {
+    'status': status.name,
+    'updated_at': DateTime.now().toIso8601String(),
+  };
+
+  if (status == TradeStatus.closed) {
+    data['closedAt'] = FieldValue.serverTimestamp();
+  } else {
+    data['closedAt'] = FieldValue.delete();
   }
+
+  await _firestore.collection('holdings').doc(tradeId).update(data);
+}
 
 Future<List<TradeUiModel>> getLast100ClosedTrades() async {
   final snapshot = await _firestore

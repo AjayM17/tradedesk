@@ -7,83 +7,75 @@ import '../models/dashboard_metrics.dart';
 class DashboardService {
   final TradeFirestoreService _tradeService;
 
-  // 🔒 Move to Settings later
   static const double totalCapital = 1000000; // ₹10,00,000
   static const double maxPortfolioRiskPercent = 0.05; // 5%
 
   DashboardService(this._tradeService);
 
-  /// ✅ Always compute risk dynamically (no stale data)
-double _calculateCurrentRisk(TradeUiModel trade) {
-  if (trade.quantity <= 0) return 0;
+  double _calculateCurrentRisk(TradeUiModel trade) {
+    if (trade.effectiveQuantity <= 0) return 0;
 
-  final diff = trade.entryPrice - trade.stopLoss;
+    final diff = trade.entryPrice - trade.stopLoss;
 
-  if (diff <= 0) return 0; // 🔥 important line
+    if (diff <= 0) return 0;
 
-  return diff * trade.quantity;
-}
-  Future<DashboardMetrics> loadMetrics({
+    return diff * trade.effectiveQuantity;
+  }
+
+  Stream<DashboardMetrics> loadMetrics({
     bool includeProfits = false,
-  }) async {
-    final List<TradeUiModel> trades = await _tradeService.getTradesOnce();
+  }) {
+    return _tradeService
+        .getTradesByStatus(TradeStatus.active)
+        .map((trades) {
+      double lossAmount = 0;
+      double riskUsed = 0;
 
-    double lossAmount = 0;
-    double riskUsed = 0;
+      int totalTrades = trades.length;
+      int tradesInProfit = 0;
+      int tradesInLoss = 0;
 
-    int totalTrades = trades.length;
-    int tradesInProfit = 0;
-    int tradesInLoss = 0;
-
-    for (final trade in trades) {
-      // ─────────────────────
-      // PROFIT / LOSS COUNT
-      // ─────────────────────
-      if (trade.pnlValue > 0) {
-        tradesInProfit++;
-      } else if (trade.pnlValue < 0) {
-        tradesInLoss++;
-      }
-
-      // ─────────────────────
-      // LOSS / NET P&L
-      // ─────────────────────
-      if (includeProfits) {
-        lossAmount += trade.pnlValue; // net mode
-      } else {
-        if (trade.pnlValue < 0) {
-          lossAmount += trade.pnlValue.abs(); // loss only
+      for (final trade in trades) {
+        // Profit / Loss Count
+        if (trade.pnlValue > 0) {
+          tradesInProfit++;
+        } else if (trade.pnlValue < 0) {
+          tradesInLoss++;
         }
-      }
 
-      // ─────────────────────
-      // RISK USED (ONLY ACTIVE TRADES)
-      // ✅ Dynamic calculation
-      // ─────────────────────
-      if (trade.status == TradeStatus.active) {
+        // Loss / Net P&L
+        if (includeProfits) {
+          lossAmount += trade.pnlValue;
+        } else if (trade.pnlValue < 0) {
+          lossAmount += trade.pnlValue.abs();
+        }
+
+        // Current Risk
         riskUsed += _calculateCurrentRisk(trade);
       }
-    }
-     final bool isNetProfit = includeProfits && lossAmount > 0;
 
-    // Normalize for UI
-    if (includeProfits) {
-      lossAmount = lossAmount.abs();
-    }
+      final bool isNetProfit =
+          includeProfits && lossAmount > 0;
 
-    final double maxRisk = totalCapital * maxPortfolioRiskPercent;
+      if (includeProfits) {
+        lossAmount = lossAmount.abs();
+      }
 
-    final double remainingRisk =
-        (maxRisk - riskUsed).clamp(0, maxRisk);
+      final double maxRisk =
+          totalCapital * maxPortfolioRiskPercent;
 
-    return DashboardMetrics(
-      lossAmount: lossAmount,
-      remainingRisk: remainingRisk,
-      totalTrades: totalTrades,
-      tradesInProfit: tradesInProfit,
-      tradesInLoss: tradesInLoss,
-      isNetProfit: isNetProfit,
-    );
+      final double remainingRisk =
+          (maxRisk - riskUsed).clamp(0.0, maxRisk);
+
+      return DashboardMetrics(
+        lossAmount: lossAmount,
+        remainingRisk: remainingRisk,
+        totalTrades: totalTrades,
+        tradesInProfit: tradesInProfit,
+        tradesInLoss: tradesInLoss,
+        isNetProfit: isNetProfit,
+      );
+    });
   }
 
   Future<List<TradeUiModel>> loadLast100Trades() async {

@@ -6,7 +6,10 @@ class TradeFirestoreDto {
   final String id;
   final Map<String, dynamic> data;
 
-  TradeFirestoreDto({required this.id, required this.data});
+  TradeFirestoreDto({
+    required this.id,
+    required this.data,
+  });
 
   TradeUiModel toUiModel() {
     final entry = (data['entryprice'] as num).toDouble();
@@ -22,49 +25,50 @@ class TradeFirestoreDto {
         )
         .toList();
 
-final trade = TradeModel(
-  tradeId: id,
-  entryPrice: entry,
-  stopLoss: sl,
-  quantity: qty,
-  initialStopLoss: initSl,
-  rValue: (entry - initSl).abs(),
-  actions: actions,
-  partialBooked: data['partialBooked'] ?? false, // ✅ ADD THIS
-);
+    final trade = TradeModel(
+      tradeId: id,
+      entryPrice: entry,
+      stopLoss: sl,
+      quantity: qty,
+      initialStopLoss: initSl,
+      rValue: (entry - initSl).abs(),
+      actions: actions,
+      partialBooked: data['partialBooked'] ?? false,
+    );
 
     // ─────────────────────────────────────
-    // 🔹 RECONSTRUCT BUY SIDE (COST BASIS)
+    // BUY SIDE (Cost Basis)
     // ─────────────────────────────────────
 
     int initialQty = qty;
+
     for (final a in actions) {
       if (a.kind == TradeActionKind.rBooking) {
-        initialQty += a.quantity; // sold earlier
-      } else if (a.kind == TradeActionKind.addOn) {
-        initialQty -= a.quantity; // bought later
+        initialQty += a.quantity;
       }
     }
 
     double totalBuyCost = entry * initialQty;
     int totalBuyQty = initialQty;
 
-    for (final a in actions) {
-      if (a.kind == TradeActionKind.addOn) {
-        totalBuyCost += a.price * a.quantity;
-        totalBuyQty += a.quantity;
-      }
-    }
-
     final double averageBuyPrice =
         totalBuyQty > 0 ? totalBuyCost / totalBuyQty : entry;
 
     // ─────────────────────────────────────
-    // 🔹 CORRECT P&L CALCULATION
+    // Effective Quantity
+    // Use only 50% quantity after Partial Book
+    // ─────────────────────────────────────
+
+    final int effectiveQty = trade.partialBooked
+        ? (qty * 0.5).floor()
+        : qty;
+
+    // ─────────────────────────────────────
+    // P&L
     // ─────────────────────────────────────
 
     final double pnlValue =
-        (sl - averageBuyPrice) * qty;
+        (sl - averageBuyPrice) * effectiveQty;
 
     final double pnlPercent =
         averageBuyPrice == 0

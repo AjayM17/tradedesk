@@ -5,7 +5,7 @@ class RBookingCalculator {
   /// Minimum 25% of CURRENT quantity
   static int calculateQty({
     required TradeModel trade,
-    double minPercent = 0.25,
+    double minPercent = 0.5,
   }) {
     final qty = (trade.quantity * minPercent).floor();
     return qty <= 0 ? 1 : qty;

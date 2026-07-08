@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:trade_desk/features/settings/data/settings_state.dart';
-import '../widgets/trading_style_card.dart';
-import '../widgets/entry_rules_card.dart';
-import '../widgets/stop_loss_rules_card.dart';
-import '../widgets/partial_profit_card.dart';
-// import '../widgets/add_on_rules_card.dart';
-import '../widgets/final_exit_rules_card.dart';
+
+import '../../data/settings_state.dart';
+import '../widgets/profit_booking_card.dart';
 import '../widgets/risk_reward_section.dart';
+import '../widgets/trading_rules_card.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -27,11 +24,10 @@ class SettingsScreen extends StatelessWidget {
       ),
       body: ListView(
         padding: const EdgeInsets.all(12),
-        children: const [
-          // 🔒 TAGLINE (SUBTLE, ONCE)
-          Padding(
-            padding: EdgeInsets.only(bottom: 12),
-            child: Center(
+        children: [
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: 12),
               child: Text(
                 'No Rule. No Trade.',
                 style: TextStyle(
@@ -43,67 +39,54 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
 
-          TradingStyleCard(),
-          SizedBox(height: 8),
+          const TradingRulesCard(),
+          const SizedBox(height: 12),
 
-          RiskRewardSection(), // 💰 RISK FIRST
-          SizedBox(height: 12),
+          const RiskRewardSection(),
+          const SizedBox(height: 12),
 
-          EntryRulesCard(),
-          SizedBox(height: 8),
-
-          StopLossRulesCard(),
-          SizedBox(height: 8),
-
-          PartialProfitCard(),
-          SizedBox(height: 8),
-
-          // AddOnRulesCard(), 
-          // SizedBox(height: 8),
-
-          // FinalExitRulesCard(),
+          const ProfitBookingCard(),
         ],
       ),
     );
   }
 
-  // ---------------------------
-  // Reset Confirmation
-  // ---------------------------
-  void _confirmReset(BuildContext context) async {
+  Future<void> _confirmReset(BuildContext context) async {
     final settings = context.read<SettingsState>();
     final messenger = ScaffoldMessenger.of(context);
 
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Reset Settings'),
-        content: const Text(
-          'This will reset all risk and rule settings '
-          'to their default values.\n\n'
-          'Do you want to continue?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Reset'),
-          ),
-        ],
+    final confirmed =
+        await showDialog<bool>(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                title: const Text('Reset Settings'),
+                content: const Text(
+                  'Reset all settings to their default values?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () =>
+                        Navigator.of(dialogContext).pop(false),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () =>
+                        Navigator.of(dialogContext).pop(true),
+                    child: const Text('Reset'),
+                  ),
+                ],
+              ),
+            ) ??
+            false;
+
+    if (!confirmed) return;
+
+    settings.resetToDefaults();
+
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Settings reset successfully'),
       ),
     );
-
-    if (confirm == true) {
-      settings.resetToDefaults();
-
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Settings reset to defaults'),
-        ),
-      );
-    }
   }
 }

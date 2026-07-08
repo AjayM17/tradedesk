@@ -26,7 +26,15 @@ class TradeUiModel {
   });
 
   // ───────── BASIC PASSTHROUGHS ─────────
+
+  /// Original quantity stored in Firestore.
   int get quantity => trade.quantity;
+
+  /// Quantity used for calculations.
+  /// After Partial Book, only 50% quantity is considered.
+  int get effectiveQuantity =>
+      partialBooked ? (trade.quantity * 0.5).floor() : trade.quantity;
+
   double get stopLoss => trade.stopLoss;
   double get initialStopLoss => trade.initialStopLoss;
   List<TradeActionLog> get actions => trade.actions;
@@ -34,47 +42,16 @@ class TradeUiModel {
   bool get isLocked => trade.actions.length >= 4;
   bool get partialBooked => trade.partialBooked;
 
-  // ───────── ENTRY / BUY LOGIC ─────────
+  // ───────── BUY LOGIC ─────────
 
-  /// Reconstruct initial entry quantity
-  /// (before any sell or add-on)
-  int get initialQuantity {
-    int qty = trade.quantity;
-
-    for (final a in trade.actions) {
-      if (a.kind == TradeActionKind.rBooking) {
-        qty += a.quantity; // sold earlier
-      } else if (a.kind == TradeActionKind.addOn) {
-        qty -= a.quantity; // bought later
-      }
-    }
-
-    return qty;
-  }
-
-  /// Average buy price (ONLY BUY prices)
-  /// Sell actions do NOT affect cost basis
-  double get averageBuyPrice {
-    double totalCost = trade.entryPrice * initialQuantity;
-    int totalQty = initialQuantity;
-
-    for (final a in trade.actions) {
-      if (a.kind == TradeActionKind.addOn) {
-        totalCost += a.price * a.quantity;
-        totalQty += a.quantity;
-      }
-    }
-
-    return totalQty > 0 ? totalCost / totalQty : trade.entryPrice;
-  }
+  double get averageBuyPrice => trade.entryPrice;
 
   // ───────── DERIVED UI VALUES ─────────
 
-  /// For UI display only
   double get buyPrice => averageBuyPrice;
 
-  /// Invested amount based on current quantity & avg buy
-  double get investedAmount => averageBuyPrice * trade.quantity;
+  /// Investment based on effective quantity.
+  double get investedAmount => averageBuyPrice * effectiveQuantity;
 
   // ───────── DASHBOARD HELPERS ─────────
 
@@ -84,15 +61,14 @@ class TradeUiModel {
 
   bool get isInLoss => pnlValue < 0;
 
-  /// Remaining downside risk in ₹
-  /// (only for active trades)
+  /// Remaining downside risk.
   double get remainingRisk {
     if (!isActive) return 0;
 
     final riskPerUnit = buyPrice - stopLoss;
     if (riskPerUnit <= 0) return 0;
 
-    return riskPerUnit * quantity;
+    return riskPerUnit * effectiveQuantity;
   }
 
   double get entryPrice => trade.entryPrice;

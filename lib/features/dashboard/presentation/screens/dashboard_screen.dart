@@ -26,8 +26,8 @@ class DashboardScreen extends StatelessWidget {
         scrolledUnderElevation: 0,
       ),
       body: AppPageLayout(
-        child: FutureBuilder<DashboardMetrics>(
-          future: dashboardService.loadMetrics(),
+        child:StreamBuilder<DashboardMetrics>(
+      stream: dashboardService.loadMetrics(),
           builder: (context, snapshot) {
             // ───────── LOADING ─────────
             if (snapshot.connectionState == ConnectionState.waiting) {
