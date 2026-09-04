@@ -22,61 +22,55 @@ class DashboardService {
     return diff * trade.effectiveQuantity;
   }
 
-  Stream<DashboardMetrics> loadMetrics({
-    bool includeProfits = false,
-  }) {
-    return _tradeService
-        .getTradesByStatus(TradeStatus.active)
-        .map((trades) {
-      double lossAmount = 0;
-      double riskUsed = 0;
+DashboardMetrics calculateMetrics(
+  List<TradeUiModel> trades, {
+  bool includeProfits = false,
+}) {
+  double lossAmount = 0;
+  double riskUsed = 0;
 
-      int totalTrades = trades.length;
-      int tradesInProfit = 0;
-      int tradesInLoss = 0;
+  int totalTrades = trades.length;
+  int tradesInProfit = 0;
+  int tradesInLoss = 0;
 
-      for (final trade in trades) {
-        // Profit / Loss Count
-        if (trade.pnlValue > 0) {
-          tradesInProfit++;
-        } else if (trade.pnlValue < 0) {
-          tradesInLoss++;
-        }
+  for (final trade in trades) {
+    if (trade.pnlValue > 0) {
+      tradesInProfit++;
+    } else if (trade.pnlValue < 0) {
+      tradesInLoss++;
+    }
 
-        // Loss / Net P&L
-        if (includeProfits) {
-          lossAmount += trade.pnlValue;
-        } else if (trade.pnlValue < 0) {
-          lossAmount += trade.pnlValue.abs();
-        }
+    if (includeProfits) {
+      lossAmount += trade.pnlValue;
+    } else if (trade.pnlValue < 0) {
+      lossAmount += trade.pnlValue.abs();
+    }
 
-        // Current Risk
-        riskUsed += _calculateCurrentRisk(trade);
-      }
-
-      final bool isNetProfit =
-          includeProfits && lossAmount > 0;
-
-      if (includeProfits) {
-        lossAmount = lossAmount.abs();
-      }
-
-      final double maxRisk =
-          totalCapital * maxPortfolioRiskPercent;
-
-      final double remainingRisk =
-          (maxRisk - riskUsed).clamp(0.0, maxRisk);
-
-      return DashboardMetrics(
-        lossAmount: lossAmount,
-        remainingRisk: remainingRisk,
-        totalTrades: totalTrades,
-        tradesInProfit: tradesInProfit,
-        tradesInLoss: tradesInLoss,
-        isNetProfit: isNetProfit,
-      );
-    });
+    riskUsed += _calculateCurrentRisk(trade);
   }
+
+  final isNetProfit =
+      includeProfits && lossAmount > 0;
+
+  if (includeProfits) {
+    lossAmount = lossAmount.abs();
+  }
+
+  final maxRisk =
+      totalCapital * maxPortfolioRiskPercent;
+
+  final remainingRisk =
+      (maxRisk - riskUsed).clamp(0.0, maxRisk);
+
+  return DashboardMetrics(
+    lossAmount: lossAmount,
+    remainingRisk: remainingRisk,
+    totalTrades: totalTrades,
+    tradesInProfit: tradesInProfit,
+    tradesInLoss: tradesInLoss,
+    isNetProfit: isNetProfit,
+  );
+}
 
   Future<List<TradeUiModel>> loadLast100Trades() async {
     return _tradeService.getLast100ClosedTrades();

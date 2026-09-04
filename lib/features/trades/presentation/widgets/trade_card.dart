@@ -31,6 +31,8 @@ class TradeCard extends StatelessWidget {
     final targetR = context.select<SettingsState, double>((s) => s.targetR);
 
     final targetPrice = trade.averageBuyPrice + (riskPerShare * targetR);
+    final targetPercent =
+    ((targetPrice - trade.averageBuyPrice) / trade.averageBuyPrice) * 100;
 
     final int t1Qty = RBookingCalculator.calculateQty(trade: t);
 
@@ -103,64 +105,50 @@ class TradeCard extends StatelessWidget {
                   ),
                   _smallKv(
                     'Age',
-                    trade.ageInDays < 7
-                        ? '${trade.ageInDays}d'
-                        : '${(trade.ageInDays / 7).floor()}w',
+                    '${trade.ageInDays} days'
+                    // trade.ageInDays < 7
+                    //     ? '${trade.ageInDays}d'
+                    //     : '${(trade.ageInDays / 7).floor()}w',
                   ),
                 ],
               ),
 
               const SizedBox(height: 10),
 
-              // ───────── P&L + TARGETS ─────────
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isProfit
-                          ? AppTheme.success.withOpacity(0.08)
-                          : AppTheme.danger.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'P&L: ₹${trade.pnlValue.toStringAsFixed(0)} '
-                      '(${trade.pnlPercent.toStringAsFixed(1)}%)',
-                      style: TextStyle(
-                        color: isProfit ? AppTheme.success : AppTheme.danger,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
+Row(
+  children: [
+    Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 6,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: isProfit
+            ? AppTheme.success.withOpacity(0.08)
+            : AppTheme.danger.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        '₹${trade.pnlValue.toStringAsFixed(0)} • ${trade.pnlPercent.toStringAsFixed(1)}%',
+        style: TextStyle(
+          color: isProfit ? AppTheme.success : AppTheme.danger,
+          fontWeight: FontWeight.w700,
+          fontSize: 11,
+        ),
+      ),
+    ),
 
-                  const SizedBox(height: 8),
+    const Spacer(),
 
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 8),
-                        if (!trade.partialBooked)
-                          buildRTag(
-                            label:
-                                '${targetR.toStringAsFixed(targetR % 1 == 0 ? 0 : 1)}R',
-                            qty: t1Qty,
-                            price: targetPrice,
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 8),
-
-              // const Divider(height: 20),
+    if (!trade.partialBooked)
+      buildRTag(
+        label: '${targetR.toStringAsFixed(targetR % 1 == 0 ? 0 : 1)}R',
+        qty: t1Qty,
+        price: targetPrice,
+        targetPercent: targetPercent,
+      ),
+  ],
+),
             ],
           ),
         ),
@@ -168,28 +156,33 @@ class TradeCard extends StatelessWidget {
     );
   }
 
-  Widget buildRTag({
-    required String label,
-    required int qty,
-    required double price,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.purple.withOpacity(.08),
-        borderRadius: BorderRadius.circular(6),
+Widget buildRTag({
+  required String label,
+  required int qty,
+  required double price,
+  required double targetPercent,
+}) {
+  return Container(
+    padding: const EdgeInsets.symmetric(
+      horizontal: 6,
+      vertical: 6,
+    ),
+    decoration: BoxDecoration(
+      color: Colors.purple.withOpacity(.08),
+      borderRadius: BorderRadius.circular(6),
+    ),
+    child: Text(
+      '$label • Q$qty • ₹${price.toStringAsFixed(0)} • ${targetPercent.toStringAsFixed(1)}%',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+        color: Colors.purple,
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
       ),
-      child: Text(
-        '$label • Qty $qty • ₹${price.toStringAsFixed(0)}',
-        style: const TextStyle(
-          color: Colors.purple,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-
+    ),
+  );
+}
   // ───────── INFO ALERT ─────────
 
   void _showActionSheet(BuildContext context) {

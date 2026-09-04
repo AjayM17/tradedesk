@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:trade_desk/features/dashboard/presentation/data/models/dashboard_metrics.dart';
+// import 'package:trade_desk/features/dashboard/presentation/data/models/dashboard_metrics.dart';
 import 'package:trade_desk/features/dashboard/presentation/data/services/dashboard_service.dart';
 import 'package:trade_desk/features/trades/presentation/screens/create_trade_screen.dart';
 
@@ -8,7 +8,7 @@ import '../../data/services/trade_firestore_service.dart';
 import '../models/trade_ui_model.dart';
 import '../widgets/trade_card.dart';
 
-enum TradeFilter { active, profit, loss, partial, completed }
+enum TradeFilter { active, profit, loss, completed }
 
 class TradesScreen extends StatefulWidget {
   const TradesScreen({super.key});
@@ -21,7 +21,6 @@ class _TradesScreenState extends State<TradesScreen> {
   bool _includeProfits = false;
   TradeFilter _selectedFilter = TradeFilter.active;
   final ScrollController _filterController = ScrollController();
-  
 
   String _getLabel(TradeFilter filter) {
     switch (filter) {
@@ -31,18 +30,18 @@ class _TradesScreenState extends State<TradesScreen> {
         return 'Profit';
       case TradeFilter.loss:
         return 'Loss';
-      case TradeFilter.partial:
-        return 'Partial';
+      // case TradeFilter.partial:
+      //   return 'Partial';
       case TradeFilter.completed:
         return 'Completed';
     }
   }
 
   @override
-void dispose() {
-  _filterController.dispose();
-  super.dispose();
-}
+  void dispose() {
+    _filterController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +73,7 @@ void dispose() {
       body: TradesBody(
         includeProfits: _includeProfits,
         filter: _selectedFilter,
-         controller: _filterController,
+        controller: _filterController,
         getLabel: _getLabel,
         onFilterChanged: (filter) {
           setState(() {
@@ -107,7 +106,7 @@ class TradesBody extends StatelessWidget {
     super.key,
     required this.includeProfits,
     required this.filter,
-     required this.controller,
+    required this.controller,
     required this.onFilterChanged,
     required this.getLabel,
   });
@@ -117,199 +116,171 @@ class TradesBody extends StatelessWidget {
     final tradeService = TradeFirestoreService();
     final dashboardService = DashboardService(tradeService);
 
-    return StreamBuilder<DashboardMetrics>(
-      stream: dashboardService.loadMetrics(includeProfits: includeProfits),
-      builder: (context, metricsSnapshot) {
-        if (metricsSnapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (!metricsSnapshot.hasData) {
-          return const Center(child: Text('No data available'));
-        }
-
-        final data = metricsSnapshot.data!;
-
-   return StreamBuilder<List<TradeUiModel>>(
-  stream: tradeService.getTradesByStatus(TradeStatus.active),
-  builder: (context, activeSnapshot) {
-    if (activeSnapshot.connectionState == ConnectionState.waiting) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (activeSnapshot.hasError) {
-      return const Center(
-        child: Text('Something went wrong while loading active trades'),
-      );
-    }
-
     return StreamBuilder<List<TradeUiModel>>(
-      stream: tradeService.getTradesByStatus(TradeStatus.closed),
-      builder: (context, completedSnapshot) {
-        if (completedSnapshot.connectionState == ConnectionState.waiting) {
+      stream: tradeService.getAllTrades(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (completedSnapshot.hasError) {
+        if (snapshot.hasError) {
+          debugPrint('========== ACTIVE ERROR ==========');
+        debugPrint(snapshot.error.toString());
+
+if (snapshot.stackTrace != null) {
+  debugPrint(snapshot.stackTrace.toString());
+}
+
           return const Center(
-            child: Text('Something went wrong while loading completed trades'),
+            child: Text('Something went wrong while loading active trades'),
           );
         }
 
-        final activeTrades = activeSnapshot.data ?? [];
-        final completedTrades = completedSnapshot.data ?? [];
+final allTrades = snapshot.data ?? [];
 
-        final counts = {
-          TradeFilter.active: activeTrades.length,
-          TradeFilter.profit:
-              activeTrades.where((t) => t.isInProfit).length,
-          TradeFilter.loss:
-              activeTrades.where((t) => t.isInLoss).length,
-          TradeFilter.partial:
-              activeTrades.where((t) => t.partialBooked).length,
-          TradeFilter.completed: completedTrades.length,
-        };
+final activeTrades = allTrades
+    .where((t) => t.status == TradeStatus.active)
+    .toList();
 
-        final filteredTrades = switch (filter) {
-          TradeFilter.active => activeTrades,
+final completedTrades = allTrades
+    .where((t) => t.status == TradeStatus.closed)
+    .toList();
 
-          TradeFilter.profit =>
-              activeTrades.where((t) => t.isInProfit).toList(),
+         
 
-          TradeFilter.loss =>
-              activeTrades.where((t) => t.isInLoss).toList(),
+            final counts = {
+              TradeFilter.active: activeTrades.length,
+              TradeFilter.profit: activeTrades
+                  .where((t) => t.isInProfit)
+                  .length,
+              TradeFilter.loss: activeTrades.where((t) => t.isInLoss).length,
+              // TradeFilter.partial: activeTrades
+              //     .where((t) => t.partialBooked)
+              //     .length,
+              TradeFilter.completed: completedTrades.length,
+            };
 
-          TradeFilter.partial =>
-              activeTrades.where((t) => t.partialBooked).toList(),
+            final filteredTrades = switch (filter) {
+              TradeFilter.active => activeTrades,
 
-          TradeFilter.completed => completedTrades,
-        };
+              TradeFilter.profit =>
+                activeTrades.where((t) => t.isInProfit).toList(),
 
-        double riskAmount = 0;
-double remainingRisk = 0;
+              TradeFilter.loss =>
+                activeTrades.where((t) => t.isInLoss).toList(),
 
-for (final trade in filteredTrades) {
-  if (includeProfits || trade.pnlValue < 0) {
-    riskAmount += trade.pnlValue;
+              // TradeFilter.partial =>
+              //   activeTrades.where((t) => t.partialBooked).toList(),
+
+              TradeFilter.completed => completedTrades,
+            };
+
+      final data = dashboardService.calculateMetrics(
+  filteredTrades,
+  includeProfits: includeProfits,
+);
+
+            filteredTrades.sort((a, b) => b.pnlValue.compareTo(a.pnlValue));
+
+            if (filteredTrades.isEmpty) {
+              String message;
+
+              switch (filter) {
+                case TradeFilter.active:
+                  message = 'No active trades';
+                  break;
+                case TradeFilter.profit:
+                  message = 'No profitable trades';
+                  break;
+                case TradeFilter.loss:
+                  message = 'No losing trades';
+                  break;
+                // case TradeFilter.partial:
+                //   message = 'No partial booked trades';
+                  // break;
+                case TradeFilter.completed:
+                  message = 'No completed trades';
+                  break;
+              }
+
+              return Column(
+                children: [
+                  _buildFilterChips(counts),
+                  Expanded(child: Center(child: Text(message))),
+                ],
+              );
+            }
+
+            return Column(
+              children: [
+                _buildFilterChips(counts),
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: SummaryCard(
+                          icon: Icons.trending_down,
+                          title: 'Risk Amount',
+                          value: '₹${data.lossAmount.toStringAsFixed(0)}',
+                          valueColor: includeProfits
+                              ? (data.isNetProfit ? Colors.green : Colors.red)
+                              : Colors.red,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SummaryCard(
+                          icon: Icons.shield_outlined,
+                          title: 'Remaining Risk',
+                          value: '₹${data.remainingRisk.toStringAsFixed(0)}',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: filteredTrades.length,
+                    itemBuilder: (context, index) {
+                      return TradeCard(trade: filteredTrades[index]);
+                    },
+                  ),
+                ),
+              ],
+            );
+        
+      },
+    );
   }
 
-  remainingRisk += trade.remainingRisk;
-}
-
-final isNetProfit = riskAmount >= 0;
-
-        filteredTrades.sort(
-          (a, b) => b.pnlValue.compareTo(a.pnlValue),
-        );
-
-        if (filteredTrades.isEmpty) {
-          String message;
-
-          switch (filter) {
-            case TradeFilter.active:
-              message = 'No active trades';
-              break;
-            case TradeFilter.profit:
-              message = 'No profitable trades';
-              break;
-            case TradeFilter.loss:
-              message = 'No losing trades';
-              break;
-            case TradeFilter.partial:
-              message = 'No partial booked trades';
-              break;
-            case TradeFilter.completed:
-              message = 'No completed trades';
-              break;
-          }
-
-          return Column(
-            children: [
-              _buildFilterChips(counts),
-              Expanded(
-                child: Center(
-                  child: Text(message),
+  Widget _buildFilterChips(Map<TradeFilter, int> counts) {
+    return SingleChildScrollView(
+      key: const PageStorageKey('trade_filters'),
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Row(
+        children: TradeFilter.values.map((tradeFilter) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              showCheckmark: false,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+              label: Text(
+                '${getLabel(tradeFilter)} (${counts[tradeFilter] ?? 0})',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-            ],
+              selected: filter == tradeFilter,
+              onSelected: (_) => onFilterChanged(tradeFilter),
+            ),
           );
-        }
-
-        return Column(
-          children: [
-            _buildFilterChips(counts),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SummaryCard(
-                      icon: Icons.trending_down,
-                      title: 'Risk Amount',
-                      value: '₹${riskAmount.toStringAsFixed(0)}',
-                      valueColor: includeProfits
-                          ? (isNetProfit ? Colors.green : Colors.red)
-                          : Colors.red,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: SummaryCard(
-                      icon: Icons.shield_outlined,
-                      title: 'Remaining Risk',
-                      value: '₹${remainingRisk.toStringAsFixed(0)}',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(12),
-                itemCount: filteredTrades.length,
-                itemBuilder: (context, index) {
-                  return TradeCard(
-                    trade: filteredTrades[index],
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  },
-);
-      },
+        }).toList(),
+      ),
     );
   }
-
-Widget _buildFilterChips(Map<TradeFilter, int> counts) {
-  return SingleChildScrollView(
-     key: const PageStorageKey('trade_filters'),
-    scrollDirection: Axis.horizontal,
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-    child: Row(
-      children: TradeFilter.values.map((tradeFilter) {
-        return Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: ChoiceChip(
-            showCheckmark: false,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            visualDensity: VisualDensity.compact,
-            label: Text(
-              '${getLabel(tradeFilter)} (${counts[tradeFilter] ?? 0})',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            selected: filter == tradeFilter,
-            onSelected: (_) => onFilterChanged(tradeFilter),
-          ),
-        );
-      }).toList(),
-    ),
-  );
-}
 }

@@ -24,6 +24,20 @@ Stream<List<TradeUiModel>> getTradesByStatus(TradeStatus status) {
   });
 }
 
+Stream<List<TradeUiModel>> getAllTrades() {
+  return _firestore
+      .collection('holdings')
+      .snapshots()
+      .map((snapshot) {
+    return snapshot.docs.map((doc) {
+      return TradeFirestoreDto(
+        id: doc.id,
+        data: doc.data(),
+      ).toUiModel();
+    }).toList();
+  });
+}
+
   // ─────────────────────────────────────────────
   // READ (ONCE)
   // ─────────────────────────────────────────────
@@ -100,8 +114,6 @@ Future<void> updateTradeStatus({
 
   if (status == TradeStatus.closed) {
     data['closedAt'] = FieldValue.serverTimestamp();
-  } else {
-    data['closedAt'] = FieldValue.delete();
   }
 
   await _firestore.collection('holdings').doc(tradeId).update(data);
