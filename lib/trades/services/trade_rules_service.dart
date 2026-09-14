@@ -19,19 +19,14 @@ class TradeRuleCheckResult {
   final bool passed;
   final List<TradeRuleResult> results;
 
-  const TradeRuleCheckResult({
-    required this.passed,
-    required this.results,
-  });
+  const TradeRuleCheckResult({required this.passed, required this.results});
 }
 
 class TradeRulesService {
   final SettingsService _settingsService;
 
-  TradeRulesService({
-    SettingsService? settingsService,
-  }) : _settingsService =
-            settingsService ?? SettingsService();
+  TradeRulesService({SettingsService? settingsService})
+    : _settingsService = settingsService ?? SettingsService();
 
   // =========================================================
   // NEW TRADE
@@ -42,49 +37,23 @@ class TradeRulesService {
     List<TradeModel> existingTrades, {
     String? excludeTradeId,
   }) async {
-    final settings =
-        await _settingsService.getSettings();
+    final settings = await _settingsService.getSettings();
 
     final otherTrades = existingTrades
-        .where(
-          (existingTrade) =>
-              existingTrade.id != excludeTradeId,
-        )
+        .where((existingTrade) => existingTrade.id != excludeTradeId)
         .toList();
 
     final results = <TradeRuleResult>[
-      _checkRiskValue(
-        trade,
-        settings.maxRiskPerTrade,
-      ),
-
-      _checkRiskPercentage(
-        trade,
-        settings.maxRiskPercentPerTrade,
-      ),
-
-      _checkInvestment(
-        trade,
-        settings.maxInvestmentPerTrade,
-      ),
-
-      _checkActiveTrades(
-        otherTrades,
-        settings.maxActiveTrades,
-      ),
-
-      _checkMonthlyLimit(
-        trade,
-        otherTrades,
-        settings.maxTradesPerMonth,
-      ),
-
+      _checkRiskValue(trade, settings.maxRiskPerTrade),
+      _checkRiskPercentage(trade, settings.maxRiskPercentPerTrade),
+      _checkInvestment(trade, settings.maxInvestmentPerTrade),
+      _checkActiveTrades(otherTrades, settings.maxActiveTrades),
+      _checkMonthlyLimit(trade, otherTrades, settings.maxTradesPerMonth),
       _checkQuarterlyLimit(
         trade,
         otherTrades,
         settings.maxTradesPerThreeMonths,
       ),
-
       _checkPortfolioRisk(
         trade,
         otherTrades,
@@ -94,9 +63,7 @@ class TradeRulesService {
     ];
 
     return TradeRuleCheckResult(
-      passed: results.every(
-        (result) => result.passed,
-      ),
+      passed: results.every((result) => result.passed),
       results: results,
     );
   }
@@ -109,37 +76,17 @@ class TradeRulesService {
     TradeModel trade,
     List<TradeModel> existingTrades,
   ) async {
-    final settings =
-        await _settingsService.getSettings();
+    final settings = await _settingsService.getSettings();
 
     final otherTrades = existingTrades
-        .where(
-          (existingTrade) =>
-              existingTrade.id != trade.id,
-        )
+        .where((existingTrade) => existingTrade.id != trade.id)
         .toList();
 
     final results = <TradeRuleResult>[
-      _checkRiskValue(
-        trade,
-        settings.maxRiskPerTrade,
-      ),
-
-      _checkRiskPercentage(
-        trade,
-        settings.maxRiskPercentPerTrade,
-      ),
-
-      _checkInvestment(
-        trade,
-        settings.maxInvestmentPerTrade,
-      ),
-
-      _checkActiveTrades(
-        otherTrades,
-        settings.maxActiveTrades,
-      ),
-
+      _checkRiskValue(trade, settings.maxRiskPerTrade),
+      _checkRiskPercentage(trade, settings.maxRiskPercentPerTrade),
+      _checkInvestment(trade, settings.maxInvestmentPerTrade),
+      _checkActiveTrades(otherTrades, settings.maxActiveTrades),
       _checkPortfolioRisk(
         trade,
         otherTrades,
@@ -149,9 +96,7 @@ class TradeRulesService {
     ];
 
     return TradeRuleCheckResult(
-      passed: results.every(
-        (result) => result.passed,
-      ),
+      passed: results.every((result) => result.passed),
       results: results,
     );
   }
@@ -160,10 +105,7 @@ class TradeRulesService {
   // RISK VALUE
   // =========================================================
 
-  TradeRuleResult _checkRiskValue(
-    TradeModel trade,
-    double maxRisk,
-  ) {
+  TradeRuleResult _checkRiskValue(TradeModel trade, double maxRisk) {
     final riskValue = _getRiskValue(trade);
 
     final passed = riskValue <= maxRisk;
@@ -174,9 +116,9 @@ class TradeRulesService {
       passed: passed,
       message: passed
           ? 'Risk ₹${riskValue.toStringAsFixed(2)} '
-              'is within ₹${maxRisk.toStringAsFixed(2)} limit.'
+                'is within ₹${maxRisk.toStringAsFixed(2)} limit.'
           : 'Risk ₹${riskValue.toStringAsFixed(2)} '
-              'exceeds ₹${maxRisk.toStringAsFixed(2)} limit.',
+                'exceeds ₹${maxRisk.toStringAsFixed(2)} limit.',
     );
   }
 
@@ -188,11 +130,9 @@ class TradeRulesService {
     TradeModel trade,
     double maxRiskPercentage,
   ) {
-    final riskPercentage =
-        _getRiskPercentage(trade);
+    final riskPercentage = _getRiskPercentage(trade);
 
-    final passed =
-        riskPercentage <= maxRiskPercentage;
+    final passed = riskPercentage <= maxRiskPercentage;
 
     return TradeRuleResult(
       key: 'risk-percentage',
@@ -200,9 +140,9 @@ class TradeRulesService {
       passed: passed,
       message: passed
           ? 'Risk ${riskPercentage.toStringAsFixed(2)}% '
-              'is within $maxRiskPercentage% limit.'
+                'is within $maxRiskPercentage% limit.'
           : 'Risk ${riskPercentage.toStringAsFixed(2)}% '
-              'exceeds $maxRiskPercentage% limit.',
+                'exceeds $maxRiskPercentage% limit.',
     );
   }
 
@@ -210,10 +150,7 @@ class TradeRulesService {
   // INVESTMENT
   // =========================================================
 
-  TradeRuleResult _checkInvestment(
-    TradeModel trade,
-    double maxInvestment,
-  ) {
+  TradeRuleResult _checkInvestment(TradeModel trade, double maxInvestment) {
     final investment = _getInvestment(trade);
 
     final passed = investment <= maxInvestment;
@@ -224,9 +161,9 @@ class TradeRulesService {
       passed: passed,
       message: passed
           ? 'Investment ₹${investment.toStringAsFixed(2)} '
-              'is within ₹${maxInvestment.toStringAsFixed(2)} limit.'
+                'is within ₹${maxInvestment.toStringAsFixed(2)} limit.'
           : 'Investment ₹${investment.toStringAsFixed(2)} '
-              'exceeds ₹${maxInvestment.toStringAsFixed(2)} limit.',
+                'exceeds ₹${maxInvestment.toStringAsFixed(2)} limit.',
     );
   }
 
@@ -239,10 +176,7 @@ class TradeRulesService {
     int maxActiveTrades,
   ) {
     final activeTrades = existingTrades
-        .where(
-          (trade) =>
-              trade.status == TradeStatus.active,
-        )
+        .where((trade) => trade.status == TradeStatus.active)
         .length;
 
     final passed = activeTrades < maxActiveTrades;
@@ -253,7 +187,7 @@ class TradeRulesService {
       passed: passed,
       message: passed
           ? '$activeTrades of $maxActiveTrades '
-              'active trade slots used.'
+                'active trade slots used.'
           : 'Maximum $maxActiveTrades active trades reached.',
     );
   }
@@ -267,31 +201,22 @@ class TradeRulesService {
     List<TradeModel> existingTrades,
     int maxTradesPerMonth,
   ) {
-    final tradeDate =
-        _parseDateOnly(trade.tradeDate);
+    final tradeDate = _parseDateOnly(trade.tradeDate);
 
     final month = tradeDate.month;
     final year = tradeDate.year;
 
-    final tradesThisMonth =
-        existingTrades.where((existingTrade) {
-      // Waiting trades are Watchlist only.
-      if (existingTrade.status ==
-          TradeStatus.waiting) {
+    final tradesThisMonth = existingTrades.where((existingTrade) {
+      if (existingTrade.status == TradeStatus.waiting) {
         return false;
       }
 
-      final existingDate =
-          _parseDateOnly(
-        existingTrade.tradeDate,
-      );
+      final existingDate = _parseDateOnly(existingTrade.tradeDate);
 
-      return existingDate.month == month &&
-          existingDate.year == year;
+      return existingDate.month == month && existingDate.year == year;
     }).length;
 
-    final passed =
-        tradesThisMonth < maxTradesPerMonth;
+    final passed = tradesThisMonth < maxTradesPerMonth;
 
     return TradeRuleResult(
       key: 'monthly-limit',
@@ -299,9 +224,9 @@ class TradeRulesService {
       passed: passed,
       message: passed
           ? '$tradesThisMonth of $maxTradesPerMonth '
-              'monthly trades used.'
+                'monthly trades used.'
           : 'Maximum $maxTradesPerMonth '
-              'trades for this month reached.',
+                'trades for this month reached.',
     );
   }
 
@@ -314,116 +239,62 @@ class TradeRulesService {
     List<TradeModel> existingTrades,
     int maxTradesPerQuarter,
   ) {
-    final quarter =
-        _getQuarterInfo(trade.tradeDate);
+    final quarter = _getQuarterInfo(trade.tradeDate);
 
-    // -------------------------------------------------------
-    // New trades opened during this quarter
-    // -------------------------------------------------------
-
-    final newTradesThisQuarter =
-        existingTrades.where((existingTrade) {
-      // Waiting trades are Watchlist only.
-      if (existingTrade.status ==
-          TradeStatus.waiting) {
+    final newTradesThisQuarter = existingTrades.where((existingTrade) {
+      if (existingTrade.status == TradeStatus.waiting) {
         return false;
       }
 
-      final openedDate =
-          _parseDateOnly(
-        existingTrade.tradeDate,
-      );
+      final openedDate = _parseDateOnly(existingTrade.tradeDate);
 
-      return _isDateInRange(
-        openedDate,
-        quarter.start,
-        quarter.end,
-      );
+      return _isDateInRange(openedDate, quarter.start, quarter.end);
     }).length;
 
-    // -------------------------------------------------------
-    // Previous-quarter trades completed this quarter
-    // -------------------------------------------------------
-
-    final previousQuarterCompletions =
-        existingTrades.where((existingTrade) {
-      // Waiting trades are ignored.
-      if (existingTrade.status ==
-          TradeStatus.waiting) {
+    final previousQuarterCompletions = existingTrades.where((existingTrade) {
+      if (existingTrade.status == TradeStatus.waiting) {
         return false;
       }
 
-      // Only completed trades can have completedAt.
-      if (existingTrade.status !=
-              TradeStatus.completed ||
+      if (existingTrade.status != TradeStatus.completed ||
           existingTrade.completedAt == null) {
         return false;
       }
 
-      final openedDate =
-          _parseDateOnly(
-        existingTrade.tradeDate,
-      );
+      final openedDate = _parseDateOnly(existingTrade.tradeDate);
 
-      final completedDate =
-          _parseDateOnly(
-        existingTrade.completedAt!,
-      );
+      final completedDate = _parseDateOnly(existingTrade.completedAt!);
 
-      final openedBeforeQuarter =
-          openedDate.isBefore(quarter.start);
+      final openedBeforeQuarter = openedDate.isBefore(quarter.start);
 
-      final completedThisQuarter =
-          _isDateInRange(
+      final completedThisQuarter = _isDateInRange(
         completedDate,
         quarter.start,
         quarter.end,
       );
 
-      return openedBeforeQuarter &&
-          completedThisQuarter;
+      return openedBeforeQuarter && completedThisQuarter;
     }).length;
 
-    // -------------------------------------------------------
-    // Previous-quarter active trades carried forward
-    // -------------------------------------------------------
-
-    final carriedForwardTrades =
-        existingTrades.where((existingTrade) {
-      // Only active trades can be carried forward.
-      if (existingTrade.status !=
-          TradeStatus.active) {
+    final carriedForwardTrades = existingTrades.where((existingTrade) {
+      if (existingTrade.status != TradeStatus.active) {
         return false;
       }
 
-      final openedDate =
-          _parseDateOnly(
-        existingTrade.tradeDate,
-      );
+      final openedDate = _parseDateOnly(existingTrade.tradeDate);
 
-      return openedDate.isBefore(
-        quarter.start,
-      );
+      return openedDate.isBefore(quarter.start);
     }).length;
 
-    // -------------------------------------------------------
-    // Quarterly capacity
-    // -------------------------------------------------------
-
     final quarterlyCapacityUsed =
-        newTradesThisQuarter +
-            previousQuarterCompletions;
+        newTradesThisQuarter + previousQuarterCompletions;
 
-    final availableForNewTrades =
-        _max(
+    final availableForNewTrades = _max(
       0,
-      maxTradesPerQuarter -
-          carriedForwardTrades -
-          quarterlyCapacityUsed,
+      maxTradesPerQuarter - carriedForwardTrades - quarterlyCapacityUsed,
     );
 
-    final passed =
-        availableForNewTrades > 0;
+    final passed = availableForNewTrades > 0;
 
     return TradeRuleResult(
       key: 'quarterly-limit',
@@ -431,70 +302,13 @@ class TradeRulesService {
       passed: passed,
       message: passed
           ? '$quarterlyCapacityUsed of '
-              '$maxTradesPerQuarter quarterly slots used, '
-              '$carriedForwardTrades trade(s) carried forward. '
-              '$availableForNewTrades new trade slot(s) available.'
+                '$maxTradesPerQuarter quarterly slots used, '
+                '$carriedForwardTrades trade(s) carried forward. '
+                '$availableForNewTrades new trade slot(s) available.'
           : 'Quarterly limit reached. '
-              '$carriedForwardTrades trade(s) carried forward and '
-              '$quarterlyCapacityUsed quarterly slot(s) already used.',
+                '$carriedForwardTrades trade(s) carried forward and '
+                '$quarterlyCapacityUsed quarterly slot(s) already used.',
     );
-  }
-
-  // =========================================================
-  // QUARTER HELPERS
-  // =========================================================
-
-  _QuarterInfo _getQuarterInfo(
-    String dateString,
-  ) {
-    final date = _parseDateOnly(dateString);
-
-    final year = date.year;
-    final month = date.month;
-
-    final quarterStartMonth =
-        ((month - 1) ~/ 3) * 3 + 1;
-
-    final start = DateTime(
-      year,
-      quarterStartMonth,
-      1,
-    );
-
-    final end = DateTime(
-      year,
-      quarterStartMonth + 3,
-      1,
-    );
-
-    return _QuarterInfo(
-      start: start,
-      end: end,
-    );
-  }
-
-  DateTime _parseDateOnly(
-    String dateString,
-  ) {
-    final parts = dateString
-        .split('-')
-        .map(int.parse)
-        .toList();
-
-    return DateTime(
-      parts[0],
-      parts[1],
-      parts[2],
-    );
-  }
-
-  bool _isDateInRange(
-    DateTime date,
-    DateTime start,
-    DateTime end,
-  ) {
-    return !date.isBefore(start) &&
-        date.isBefore(end);
   }
 
   // =========================================================
@@ -508,31 +322,19 @@ class TradeRulesService {
     double maxPortfolioRiskPercent,
   ) {
     final currentRisk = existingTrades
-        .where(
-          (existingTrade) =>
-              existingTrade.status ==
-              TradeStatus.active,
-        )
+        .where((existingTrade) => existingTrade.status == TradeStatus.active)
         .fold<double>(
           0,
-          (total, existingTrade) =>
-              total +
-              _getRiskValue(existingTrade),
+          (total, existingTrade) => total + _getRiskValue(existingTrade),
         );
 
-    final newTradeRisk =
-        _getRiskValue(trade);
+    final newTradeRisk = _getRiskValue(trade);
 
-    final totalRisk =
-        currentRisk + newTradeRisk;
+    final totalRisk = currentRisk + newTradeRisk;
 
-    final maxPortfolioRisk =
-        totalInvestment *
-            maxPortfolioRiskPercent /
-            100;
+    final maxPortfolioRisk = totalInvestment * maxPortfolioRiskPercent / 100;
 
-    final passed =
-        totalRisk <= maxPortfolioRisk;
+    final passed = totalRisk <= maxPortfolioRisk;
 
     return TradeRuleResult(
       key: 'portfolio-risk',
@@ -540,9 +342,9 @@ class TradeRulesService {
       passed: passed,
       message: passed
           ? 'Portfolio risk ₹${totalRisk.toStringAsFixed(2)} '
-              'is within ₹${maxPortfolioRisk.toStringAsFixed(2)} limit.'
+                'is within ₹${maxPortfolioRisk.toStringAsFixed(2)} limit.'
           : 'Portfolio risk ₹${totalRisk.toStringAsFixed(2)} '
-              'exceeds ₹${maxPortfolioRisk.toStringAsFixed(2)} limit.',
+                'exceeds ₹${maxPortfolioRisk.toStringAsFixed(2)} limit.',
     );
   }
 
@@ -550,66 +352,51 @@ class TradeRulesService {
   // CALCULATIONS
   // =========================================================
 
-  double _getInvestment(
-    TradeModel trade,
-  ) {
+  double _getInvestment(TradeModel trade) {
     return trade.entryPrice * trade.quantity;
   }
 
-  double _getRiskValue(
-    TradeModel trade,
-  ) {
-    final riskPerShare =
-        (trade.entryPrice - trade.stopLoss).abs();
+  double _getRiskValue(TradeModel trade) {
+    final riskPerShare = trade.entryPrice - trade.stopLoss;
+
+    if (riskPerShare <= 0) {
+      return 0;
+    }
 
     return riskPerShare * trade.quantity;
   }
 
-  double _getRiskPercentage(
-    TradeModel trade,
-  ) {
+  double _getRiskPercentage(TradeModel trade) {
     if (trade.entryPrice <= 0) {
       return 0;
     }
 
-    final riskPerShare =
-        (trade.entryPrice - trade.stopLoss).abs();
+    final riskPerShare = trade.entryPrice - trade.stopLoss;
 
-    return (riskPerShare /
-            trade.entryPrice) *
-        100;
+    if (riskPerShare <= 0) {
+      return 0;
+    }
+
+    return (riskPerShare / trade.entryPrice) * 100;
   }
 
   // =========================================================
   // CAN START NEW TRADE
   // =========================================================
 
-  Future<bool> canStartNewTrade(
-    List<TradeModel> trades,
-  ) async {
-    final settings =
-        await _settingsService.getSettings();
+  Future<bool> canStartNewTrade(List<TradeModel> trades) async {
+    final settings = await _settingsService.getSettings();
 
-    // -------------------------------------------------------
-    // 1. Active trade capacity
-    // -------------------------------------------------------
-
+    // 1. Active capacity
     final activeTrades = trades
-        .where(
-          (trade) =>
-              trade.status == TradeStatus.active,
-        )
+        .where((trade) => trade.status == TradeStatus.active)
         .length;
 
-    if (activeTrades >=
-        settings.maxActiveTrades) {
+    if (activeTrades >= settings.maxActiveTrades) {
       return false;
     }
 
-    // -------------------------------------------------------
-    // 2. Monthly new-trade capacity
-    // -------------------------------------------------------
-
+    // 2. Monthly capacity
     final today = DateTime.now();
 
     final todayString =
@@ -629,8 +416,7 @@ class TradeRulesService {
       notes: '',
     );
 
-    final monthlyResult =
-        _checkMonthlyLimit(
+    final monthlyResult = _checkMonthlyLimit(
       previewTrade,
       trades,
       settings.maxTradesPerMonth,
@@ -640,12 +426,8 @@ class TradeRulesService {
       return false;
     }
 
-    // -------------------------------------------------------
-    // 3. Quarterly new-trade capacity
-    // -------------------------------------------------------
-
-    final quarterlyResult =
-        _checkQuarterlyLimit(
+    // 3. Quarterly capacity
+    final quarterlyResult = _checkQuarterlyLimit(
       previewTrade,
       trades,
       settings.maxTradesPerThreeMonths,
@@ -655,33 +437,18 @@ class TradeRulesService {
       return false;
     }
 
-    // -------------------------------------------------------
     // 4. Current portfolio risk
-    // -------------------------------------------------------
-
     final currentPortfolioRisk = trades
-        .where(
-          (trade) =>
-              trade.status == TradeStatus.active,
-        )
-        .fold<double>(
-          0,
-          (total, trade) =>
-              total + _getRiskValue(trade),
-        );
+        .where((trade) => trade.status == TradeStatus.active)
+        .fold<double>(0, (total, trade) => total + _getRiskValue(trade));
 
     final maxPortfolioRisk =
-        settings.totalInvestment *
-            settings.maxPortfolioRiskPercent /
-            100;
+        settings.totalInvestment * settings.maxPortfolioRiskPercent / 100;
 
-    if (currentPortfolioRisk >=
-        maxPortfolioRisk) {
+    if (currentPortfolioRisk >= maxPortfolioRisk) {
       return false;
     }
 
-    // There is currently capacity.
-    // Actual trade details are checked later.
     return true;
   }
 
@@ -689,34 +456,21 @@ class TradeRulesService {
   // NEW TRADE BLOCK REASON
   // =========================================================
 
-  Future<String?> getNewTradeBlockReason(
-    List<TradeModel> trades,
-  ) async {
-    final settings =
-        await _settingsService.getSettings();
+  Future<String?> getNewTradeBlockReason(List<TradeModel> trades) async {
+    final settings = await _settingsService.getSettings();
 
-    // -------------------------------------------------------
-    // 1. Active trade capacity
-    // -------------------------------------------------------
-
+    // 1. Active capacity
     final activeTrades = trades
-        .where(
-          (trade) =>
-              trade.status == TradeStatus.active,
-        )
+        .where((trade) => trade.status == TradeStatus.active)
         .length;
 
-    if (activeTrades >=
-        settings.maxActiveTrades) {
+    if (activeTrades >= settings.maxActiveTrades) {
       return 'Maximum active trades reached: '
           '$activeTrades / '
           '${settings.maxActiveTrades}.';
     }
 
-    // -------------------------------------------------------
     // 2. Monthly capacity
-    // -------------------------------------------------------
-
     final today = DateTime.now();
 
     final todayString =
@@ -736,8 +490,7 @@ class TradeRulesService {
       notes: '',
     );
 
-    final monthlyResult =
-        _checkMonthlyLimit(
+    final monthlyResult = _checkMonthlyLimit(
       previewTrade,
       trades,
       settings.maxTradesPerMonth,
@@ -747,12 +500,8 @@ class TradeRulesService {
       return monthlyResult.message;
     }
 
-    // -------------------------------------------------------
     // 3. Quarterly capacity
-    // -------------------------------------------------------
-
-    final quarterlyResult =
-        _checkQuarterlyLimit(
+    final quarterlyResult = _checkQuarterlyLimit(
       previewTrade,
       trades,
       settings.maxTradesPerThreeMonths,
@@ -762,41 +511,76 @@ class TradeRulesService {
       return quarterlyResult.message;
     }
 
-    // -------------------------------------------------------
     // 4. Portfolio risk
-    // -------------------------------------------------------
-
     final currentPortfolioRisk = trades
-        .where(
-          (trade) =>
-              trade.status == TradeStatus.active,
-        )
-        .fold<double>(
-          0,
-          (total, trade) =>
-              total + _getRiskValue(trade),
-        );
+        .where((trade) => trade.status == TradeStatus.active)
+        .fold<double>(0, (total, trade) => total + _getRiskValue(trade));
 
     final maxPortfolioRisk =
-        settings.totalInvestment *
-            settings.maxPortfolioRiskPercent /
-            100;
+        settings.totalInvestment * settings.maxPortfolioRiskPercent / 100;
 
-    if (currentPortfolioRisk >=
-        maxPortfolioRisk) {
+    if (currentPortfolioRisk >= maxPortfolioRisk) {
       return 'Portfolio risk limit reached: '
           '₹${currentPortfolioRisk.toStringAsFixed(2)} / '
           '₹${maxPortfolioRisk.toStringAsFixed(2)}.';
     }
 
-    // Trade can be started.
     return null;
   }
 
-  int _max(
-    int first,
-    int second,
-  ) {
+  // =========================================================
+  // TRADE LIST SLOT COUNT
+  // =========================================================
+
+  Future<int> getAvailableTradeSlots(List<TradeModel> trades) async {
+    final settings = await _settingsService.getSettings();
+
+    // Active and Completed both occupy a trade slot.
+    //
+    // Waiting is Watchlist and is completely ignored.
+    final usedSlots = trades
+        .where(
+          (trade) =>
+              trade.status == TradeStatus.active ||
+              trade.status == TradeStatus.completed,
+        )
+        .length;
+
+    final availableSlots = settings.maxActiveTrades - usedSlots;
+
+    return _max(0, availableSlots);
+  }
+
+  // =========================================================
+  // QUARTER HELPERS
+  // =========================================================
+
+  _QuarterInfo _getQuarterInfo(String dateString) {
+    final date = _parseDateOnly(dateString);
+
+    final year = date.year;
+    final month = date.month;
+
+    final quarterStartMonth = ((month - 1) ~/ 3) * 3 + 1;
+
+    final start = DateTime(year, quarterStartMonth, 1);
+
+    final end = DateTime(year, quarterStartMonth + 3, 1);
+
+    return _QuarterInfo(start: start, end: end);
+  }
+
+  DateTime _parseDateOnly(String dateString) {
+    final parts = dateString.split('-').map(int.parse).toList();
+
+    return DateTime(parts[0], parts[1], parts[2]);
+  }
+
+  bool _isDateInRange(DateTime date, DateTime start, DateTime end) {
+    return !date.isBefore(start) && date.isBefore(end);
+  }
+
+  int _max(int first, int second) {
     return first > second ? first : second;
   }
 }
@@ -805,8 +589,5 @@ class _QuarterInfo {
   final DateTime start;
   final DateTime end;
 
-  const _QuarterInfo({
-    required this.start,
-    required this.end,
-  });
+  const _QuarterInfo({required this.start, required this.end});
 }

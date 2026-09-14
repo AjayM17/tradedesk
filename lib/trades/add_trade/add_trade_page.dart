@@ -9,24 +9,18 @@ import '../services/trade_service.dart';
 class AddTradePage extends StatefulWidget {
   final TradeModel? tradeToEdit;
 
-  const AddTradePage({
-    super.key,
-    this.tradeToEdit,
-  });
+  const AddTradePage({super.key, this.tradeToEdit});
 
   @override
   State<AddTradePage> createState() => _AddTradePageState();
 }
 
 class _AddTradePageState extends State<AddTradePage> {
-  final SettingsService _settingsService =
-      SettingsService();
+  final SettingsService _settingsService = SettingsService();
 
-  final TradeService _tradeService =
-      TradeService();
+  final TradeService _tradeService = TradeService();
 
-  final TradeRulesService _tradeRulesService =
-      TradeRulesService();
+  final TradeRulesService _tradeRulesService = TradeRulesService();
 
   late final TextEditingController _symbolController;
   late final TextEditingController _tradeDateController;
@@ -51,26 +45,19 @@ class _AddTradePageState extends State<AddTradePage> {
   void initState() {
     super.initState();
 
-    _symbolController =
-        TextEditingController();
+    _symbolController = TextEditingController();
 
-    _tradeDateController =
-        TextEditingController();
+    _tradeDateController = TextEditingController();
 
-    _entryPriceController =
-        TextEditingController();
+    _entryPriceController = TextEditingController();
 
-    _stopLossController =
-        TextEditingController();
+    _stopLossController = TextEditingController();
 
-    _initialSLController =
-        TextEditingController();
+    _initialSLController = TextEditingController();
 
-    _quantityController =
-        TextEditingController();
+    _quantityController = TextEditingController();
 
-    _notesController =
-        TextEditingController();
+    _notesController = TextEditingController();
 
     _initialize();
   }
@@ -93,26 +80,20 @@ class _AddTradePageState extends State<AddTradePage> {
   // =========================================================
 
   Future<void> _initialize() async {
-    final settings =
-        await _settingsService.getSettings();
+    final settings = await _settingsService.getSettings();
 
     if (!mounted) {
       return;
     }
 
-    _maxInvest =
-        settings.maxInvestmentPerTrade;
+    _maxInvest = settings.maxInvestmentPerTrade;
 
-    _maxRisk =
-        settings.maxRiskPerTrade;
+    _maxRisk = settings.maxRiskPerTrade;
 
     if (widget.tradeToEdit != null) {
-      _loadTradeForEdit(
-        widget.tradeToEdit!,
-      );
+      _loadTradeForEdit(widget.tradeToEdit!);
     } else {
-      _tradeDateController.text =
-          _formatDate(DateTime.now());
+      _tradeDateController.text = _formatDate(DateTime.now());
     }
 
     setState(() {
@@ -122,29 +103,20 @@ class _AddTradePageState extends State<AddTradePage> {
     await _updateRuleCheck();
   }
 
-  void _loadTradeForEdit(
-    TradeModel trade,
-  ) {
-    _symbolController.text =
-        trade.symbol;
+  void _loadTradeForEdit(TradeModel trade) {
+    _symbolController.text = trade.symbol;
 
-    _tradeDateController.text =
-        trade.tradeDate;
+    _tradeDateController.text = trade.tradeDate;
 
-    _entryPriceController.text =
-        _formatNumber(trade.entryPrice);
+    _entryPriceController.text = _formatNumber(trade.entryPrice);
 
-    _stopLossController.text =
-        _formatNumber(trade.stopLoss);
+    _stopLossController.text = _formatNumber(trade.stopLoss);
 
-    _initialSLController.text =
-        _formatNumber(trade.initialSL);
+    _initialSLController.text = _formatNumber(trade.initialSL);
 
-    _quantityController.text =
-        trade.quantity.toString();
+    _quantityController.text = trade.quantity.toString();
 
-    _notesController.text =
-        trade.notes ?? '';
+    _notesController.text = trade.notes ?? '';
 
     _initialSLEditable = false;
   }
@@ -154,27 +126,19 @@ class _AddTradePageState extends State<AddTradePage> {
   // =========================================================
 
   double? get _entryPrice {
-    return double.tryParse(
-      _entryPriceController.text,
-    );
+    return double.tryParse(_entryPriceController.text);
   }
 
   double? get _stopLoss {
-    return double.tryParse(
-      _stopLossController.text,
-    );
+    return double.tryParse(_stopLossController.text);
   }
 
   double? get _initialSL {
-    return double.tryParse(
-      _initialSLController.text,
-    );
+    return double.tryParse(_initialSLController.text);
   }
 
   int? get _quantity {
-    return int.tryParse(
-      _quantityController.text,
-    );
+    return int.tryParse(_quantityController.text);
   }
 
   // =========================================================
@@ -185,38 +149,33 @@ class _AddTradePageState extends State<AddTradePage> {
     final entryPrice = _entryPrice;
     final stopLoss = _stopLoss;
 
-    if (entryPrice == null ||
-        stopLoss == null ||
-        entryPrice <= 0) {
+    if (entryPrice == null || stopLoss == null || entryPrice <= 0) {
       return 0;
     }
 
-    final riskPerShare =
-        (entryPrice - stopLoss).abs();
+    final riskPerShare = entryPrice - stopLoss;
 
+    // SL >= Buy:
+    // This is a protected/profitable long trade.
+    // Risk does not restrict quantity.
     if (riskPerShare <= 0) {
-      return 0;
+      return (_maxInvest / entryPrice).floor();
     }
 
-    final quantityByRisk =
-        (_maxRisk / riskPerShare).floor();
+    final quantityByRisk = (_maxRisk / riskPerShare).floor();
 
-    final quantityByInvestment =
-        (_maxInvest / entryPrice).floor();
+    final quantityByInvestment = (_maxInvest / entryPrice).floor();
 
-    return quantityByRisk <
-            quantityByInvestment
+    return quantityByRisk < quantityByInvestment
         ? quantityByRisk
         : quantityByInvestment;
   }
 
   void _onEntryPriceChange() {
     if (!isEditMode) {
-      final quantity =
-          _calculateQuantity();
+      final quantity = _calculateQuantity();
 
-      _quantityController.text =
-          quantity.toString();
+      _quantityController.text = quantity.toString();
     }
 
     _updateRuleCheck();
@@ -224,14 +183,11 @@ class _AddTradePageState extends State<AddTradePage> {
 
   void _onStopLossChange() {
     if (!isEditMode) {
-      _initialSLController.text =
-          _stopLossController.text;
+      _initialSLController.text = _stopLossController.text;
 
-      final quantity =
-          _calculateQuantity();
+      final quantity = _calculateQuantity();
 
-      _quantityController.text =
-          quantity.toString();
+      _quantityController.text = quantity.toString();
     }
 
     _updateRuleCheck();
@@ -245,16 +201,12 @@ class _AddTradePageState extends State<AddTradePage> {
     _updateRuleCheck();
   }
 
-  void _onInitialSLToggleChange(
-    bool value,
-  ) {
+  void _onInitialSLToggleChange(bool value) {
     setState(() {
       _initialSLEditable = value;
 
-      if (!value &&
-          widget.tradeToEdit != null) {
-        _initialSLController.text =
-            _formatNumber(
+      if (!value && widget.tradeToEdit != null) {
+        _initialSLController.text = _formatNumber(
           widget.tradeToEdit!.initialSL,
         );
       }
@@ -269,14 +221,16 @@ class _AddTradePageState extends State<AddTradePage> {
     final entryPrice = _entryPrice;
     final stopLoss = _stopLoss;
 
-    if (entryPrice == null ||
-        stopLoss == null ||
-        entryPrice <= 0) {
+    if (entryPrice == null || stopLoss == null || entryPrice <= 0) {
       return 0;
     }
 
-    final riskPerShare =
-        (entryPrice - stopLoss).abs();
+    final riskPerShare = entryPrice - stopLoss;
+
+    // SL >= Buy = zero risk
+    if (riskPerShare <= 0) {
+      return 0;
+    }
 
     return (riskPerShare / entryPrice) * 100;
   }
@@ -285,8 +239,7 @@ class _AddTradePageState extends State<AddTradePage> {
     final entryPrice = _entryPrice;
     final quantity = _quantity;
 
-    if (entryPrice == null ||
-        quantity == null) {
+    if (entryPrice == null || quantity == null) {
       return 0;
     }
 
@@ -298,14 +251,16 @@ class _AddTradePageState extends State<AddTradePage> {
     final stopLoss = _stopLoss;
     final quantity = _quantity;
 
-    if (entryPrice == null ||
-        stopLoss == null ||
-        quantity == null) {
+    if (entryPrice == null || stopLoss == null || quantity == null) {
       return 0;
     }
 
-    final riskPerShare =
-        (entryPrice - stopLoss).abs();
+    final riskPerShare = entryPrice - stopLoss;
+
+    // SL >= Buy = zero risk
+    if (riskPerShare <= 0) {
+      return 0;
+    }
 
     return riskPerShare * quantity;
   }
@@ -334,9 +289,7 @@ class _AddTradePageState extends State<AddTradePage> {
       return 0;
     }
 
-    return ruleCheck.results
-        .where((result) => !result.passed)
-        .length;
+    return ruleCheck.results.where((result) => !result.passed).length;
   }
 
   bool get canSave {
@@ -354,8 +307,7 @@ class _AddTradePageState extends State<AddTradePage> {
     final entryPrice = _entryPrice;
     final stopLoss = _stopLoss;
     final quantity = _quantity;
-    final tradeDate =
-        _tradeDateController.text.trim();
+    final tradeDate = _tradeDateController.text.trim();
 
     if (entryPrice == null ||
         entryPrice <= 0 ||
@@ -374,31 +326,25 @@ class _AddTradePageState extends State<AddTradePage> {
     }
 
     final previewTrade = TradeModel(
-      id: widget.tradeToEdit?.id ??
-          'preview-trade',
-      symbol:
-          _symbolController.text.trim().isEmpty
-              ? 'Preview'
-              : _symbolController.text.trim(),
+      id: widget.tradeToEdit?.id ?? 'preview-trade',
+      symbol: _symbolController.text.trim().isEmpty
+          ? 'Preview'
+          : _symbolController.text.trim(),
       tradeDate: tradeDate,
       entryPrice: entryPrice,
       stopLoss: stopLoss,
-      initialSL:
-          _initialSL ?? stopLoss,
+      initialSL: _initialSL ?? stopLoss,
       quantity: quantity,
       status: TradeStatus.active,
       notes: _notesController.text.trim(),
     );
 
-    final existingTrades =
-        await _tradeService.getTrades();
+    final existingTrades = await _tradeService.getTrades();
 
-    final result =
-        await _tradeRulesService.checkTrade(
+    final result = await _tradeRulesService.checkTrade(
       previewTrade,
       existingTrades,
-      excludeTradeId:
-          widget.tradeToEdit?.id,
+      excludeTradeId: widget.tradeToEdit?.id,
     );
 
     if (!mounted) {
@@ -424,31 +370,24 @@ class _AddTradePageState extends State<AddTradePage> {
     });
 
     final trade = TradeModel(
-      id: widget.tradeToEdit?.id ??
-          _generateId(),
-      symbol:
-          _symbolController.text.trim(),
-      tradeDate:
-          _tradeDateController.text,
+      id: widget.tradeToEdit?.id ?? _generateId(),
+      symbol: _symbolController.text.trim(),
+      tradeDate: _tradeDateController.text,
       entryPrice: _entryPrice!,
       stopLoss: _stopLoss!,
       initialSL: _initialSL!,
       quantity: _quantity!,
       status: TradeStatus.active,
-      notes:
-          _notesController.text.trim(),
+      notes: _notesController.text.trim(),
     );
 
-    final existingTrades =
-        await _tradeService.getTrades();
+    final existingTrades = await _tradeService.getTrades();
 
     // Final authoritative Rule Engine check.
-    final finalRuleCheck =
-        await _tradeRulesService.checkTrade(
+    final finalRuleCheck = await _tradeRulesService.checkTrade(
       trade,
       existingTrades,
-      excludeTradeId:
-          widget.tradeToEdit?.id,
+      excludeTradeId: widget.tradeToEdit?.id,
     );
 
     if (!finalRuleCheck.passed) {
@@ -459,21 +398,15 @@ class _AddTradePageState extends State<AddTradePage> {
         });
       }
 
-      await _showRuleFailure(
-        finalRuleCheck.results,
-      );
+      await _showRuleFailure(finalRuleCheck.results);
 
       return;
     }
 
     if (isEditMode) {
-      await _tradeService.updateTrade(
-        trade,
-      );
+      await _tradeService.updateTrade(trade);
     } else {
-      await _tradeService.addTrade(
-        trade,
-      );
+      await _tradeService.addTrade(trade);
     }
 
     if (!mounted) {
@@ -487,18 +420,11 @@ class _AddTradePageState extends State<AddTradePage> {
   // Rule Failure
   // =========================================================
 
-  Future<void> _showRuleFailure(
-    List<TradeRuleResult> results,
-  ) async {
-    final failedRules = results
-        .where((result) => !result.passed)
-        .toList();
+  Future<void> _showRuleFailure(List<TradeRuleResult> results) async {
+    final failedRules = results.where((result) => !result.passed).toList();
 
     final message = failedRules
-        .map(
-          (rule) =>
-              '${rule.label}: ${rule.message}',
-        )
+        .map((rule) => '${rule.label}: ${rule.message}')
         .join('\n\n');
 
     if (!mounted) {
@@ -509,18 +435,14 @@ class _AddTradePageState extends State<AddTradePage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text(
-            'Trade Not Allowed',
-          ),
+          title: const Text('Trade Not Allowed'),
           content: Text(message),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text(
-                'Review Trade',
-              ),
+              child: const Text('Review Trade'),
             ),
           ],
         );
@@ -536,16 +458,8 @@ class _AddTradePageState extends State<AddTradePage> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(
-          title: Text(
-            isEditMode
-                ? 'Edit Trade'
-                : 'Add Trade',
-          ),
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        appBar: AppBar(title: Text(isEditMode ? 'Edit Trade' : 'Add Trade')),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -553,31 +467,18 @@ class _AddTradePageState extends State<AddTradePage> {
       appBar: AppBar(
         leading: IconButton(
           tooltip: 'Close',
-          icon: const Icon(
-            Icons.chevron_left,
-            size: 32,
-          ),
+          icon: const Icon(Icons.chevron_left, size: 32),
           onPressed: () {
             Navigator.of(context).pop();
           },
         ),
-        title: Text(
-          isEditMode
-              ? 'Edit Trade'
-              : 'Add Trade',
-        ),
+        title: Text(isEditMode ? 'Edit Trade' : 'Add Trade'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            16,
-            18,
-            16,
-            24,
-          ),
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildForm(),
 
@@ -598,8 +499,7 @@ class _AddTradePageState extends State<AddTradePage> {
 
               _buildLimits(),
 
-              if (_ruleCheck != null)
-                _buildRuleCheck(),
+              if (_ruleCheck != null) _buildRuleCheck(),
 
               const SizedBox(height: 20),
 
@@ -615,22 +515,14 @@ class _AddTradePageState extends State<AddTradePage> {
                 width: double.infinity,
                 height: 56,
                 child: FilledButton(
-                  onPressed:
-                      canSave ? _saveTrade : null,
+                  onPressed: canSave ? _saveTrade : null,
                   child: _isSaving
                       ? const SizedBox(
                           width: 22,
                           height: 22,
-                          child:
-                              CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Text(
-                          isEditMode
-                              ? 'Update Trade'
-                              : 'Save Trade',
-                        ),
+                      : Text(isEditMode ? 'Update Trade' : 'Save Trade'),
                 ),
               ),
             ],
@@ -650,14 +542,12 @@ class _AddTradePageState extends State<AddTradePage> {
         _buildTextField(
           label: 'Symbol',
           placeholder: 'Enter symbol',
-          controller:
-              _symbolController,
+          controller: _symbolController,
         ),
 
         _buildTextField(
           label: 'Trade Date',
-          controller:
-              _tradeDateController,
+          controller: _tradeDateController,
           readOnly: true,
           onTap: _selectTradeDate,
         ),
@@ -665,8 +555,7 @@ class _AddTradePageState extends State<AddTradePage> {
         _buildTextField(
           label: 'Entry Price',
           placeholder: 'Enter entry price',
-          controller:
-              _entryPriceController,
+          controller: _entryPriceController,
           number: true,
           onChanged: (_) {
             _onEntryPriceChange();
@@ -676,8 +565,7 @@ class _AddTradePageState extends State<AddTradePage> {
         _buildTextField(
           label: 'Stop Loss',
           placeholder: 'Enter stop loss',
-          controller:
-              _stopLossController,
+          controller: _stopLossController,
           number: true,
           onChanged: (_) {
             _onStopLossChange();
@@ -689,25 +577,18 @@ class _AddTradePageState extends State<AddTradePage> {
             Expanded(
               child: _buildTextField(
                 label: 'Initial Stop Loss',
-                controller:
-                    _initialSLController,
+                controller: _initialSLController,
                 number: true,
-                readOnly:
-                    isEditMode &&
-                        !_initialSLEditable,
+                readOnly: isEditMode && !_initialSLEditable,
               ),
             ),
 
             if (isEditMode)
               Padding(
-                padding: const EdgeInsets.only(
-                  left: 8,
-                  bottom: 12,
-                ),
+                padding: const EdgeInsets.only(left: 8, bottom: 12),
                 child: Switch(
                   value: _initialSLEditable,
-                  onChanged:
-                      _onInitialSLToggleChange,
+                  onChanged: _onInitialSLToggleChange,
                 ),
               ),
           ],
@@ -718,15 +599,13 @@ class _AddTradePageState extends State<AddTradePage> {
 
   Widget _buildQuantityField() {
     return Row(
-      crossAxisAlignment:
-          CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: _buildTextField(
             label: 'Quantity',
             placeholder: 'Enter quantity',
-            controller:
-                _quantityController,
+            controller: _quantityController,
             number: true,
             integer: true,
             onChanged: (_) {
@@ -735,19 +614,12 @@ class _AddTradePageState extends State<AddTradePage> {
           ),
         ),
         const Padding(
-          padding: EdgeInsets.only(
-            left: 8,
-            bottom: 12,
-          ),
+          padding: EdgeInsets.only(left: 8, bottom: 12),
           child: Tooltip(
-            message:
-                'Quantity is auto-calculated but can be edited',
+            message: 'Quantity is auto-calculated but can be edited',
             child: Text(
               'ⓘ',
-              style: TextStyle(
-                fontSize: 20,
-                color: Color(0xFF74798A),
-              ),
+              style: TextStyle(fontSize: 20, color: Color(0xFF74798A)),
             ),
           ),
         ),
@@ -766,25 +638,19 @@ class _AddTradePageState extends State<AddTradePage> {
     ValueChanged<String>? onChanged,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(
-        bottom: 12,
-      ),
+      padding: const EdgeInsets.only(bottom: 12),
       child: TextField(
         controller: controller,
         readOnly: readOnly,
         onTap: onTap,
         onChanged: onChanged,
         keyboardType: number
-            ? TextInputType.numberWithOptions(
-                decimal: !integer,
-              )
+            ? TextInputType.numberWithOptions(decimal: !integer)
             : TextInputType.text,
         inputFormatters: number
             ? [
                 FilteringTextInputFormatter.allow(
-                  integer
-                      ? RegExp(r'[0-9]')
-                      : RegExp(r'[0-9.]'),
+                  integer ? RegExp(r'[0-9]') : RegExp(r'[0-9.]'),
                 ),
               ]
             : null,
@@ -792,30 +658,18 @@ class _AddTradePageState extends State<AddTradePage> {
           labelText: label,
           hintText: placeholder,
           filled: true,
-          fillColor:
-              const Color(0xFFF0F0F4),
+          fillColor: const Color(0xFFF0F0F4),
           border: OutlineInputBorder(
-            borderRadius:
-                BorderRadius.circular(16),
-            borderSide: const BorderSide(
-              color: Color(0xFFD4D4DA),
-            ),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xFFD4D4DA)),
           ),
-          enabledBorder:
-              OutlineInputBorder(
-            borderRadius:
-                BorderRadius.circular(16),
-            borderSide: const BorderSide(
-              color: Color(0xFFD4D4DA),
-            ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xFFD4D4DA)),
           ),
-          focusedBorder:
-              OutlineInputBorder(
-            borderRadius:
-                BorderRadius.circular(16),
-            borderSide: const BorderSide(
-              color: Color(0xFF141A2E),
-            ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xFF141A2E)),
           ),
         ),
       ),
@@ -828,39 +682,22 @@ class _AddTradePageState extends State<AddTradePage> {
 
   Widget _buildLimits() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        4,
-        10,
-        4,
-        20,
-      ),
+      padding: const EdgeInsets.fromLTRB(4, 10, 4, 20),
       child: Row(
-        mainAxisAlignment:
-            MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             'Max Investment: '
             '₹${_maxInvest.toStringAsFixed(0)}',
-            style: const TextStyle(
-              fontSize: 13,
-              color: Color(0xFF74798A),
-            ),
+            style: const TextStyle(fontSize: 13, color: Color(0xFF74798A)),
           ),
           const SizedBox(width: 8),
-          const Text(
-            '|',
-            style: TextStyle(
-              color: Color(0xFF74798A),
-            ),
-          ),
+          const Text('|', style: TextStyle(color: Color(0xFF74798A))),
           const SizedBox(width: 8),
           Text(
             'Max Risk: '
             '₹${_maxRisk.toStringAsFixed(0)}',
-            style: const TextStyle(
-              fontSize: 13,
-              color: Color(0xFF74798A),
-            ),
+            style: const TextStyle(fontSize: 13, color: Color(0xFF74798A)),
           ),
         ],
       ),
@@ -877,34 +714,25 @@ class _AddTradePageState extends State<AddTradePage> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(
-          color: const Color(0xFFD4D4DA),
-        ),
-        borderRadius:
-            BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFD4D4DA)),
+        borderRadius: BorderRadius.circular(16),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           Padding(
-            padding:
-                const EdgeInsets.symmetric(
-              horizontal: 16,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: SizedBox(
               height: 50,
               child: Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
                     'Rule Check',
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight:
-                          FontWeight.w700,
-                      color:
-                          Color(0xFF141A2E),
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF141A2E),
                     ),
                   ),
                   Text(
@@ -913,73 +741,41 @@ class _AddTradePageState extends State<AddTradePage> {
                         : 'All Passed',
                     style: TextStyle(
                       fontSize: 11,
-                      fontWeight:
-                          FontWeight.w600,
-                      color:
-                          failedRuleCount > 0
-                              ? const Color(
-                                  0xFFC6284A,
-                                )
-                              : const Color(
-                                  0xFF21883B,
-                                ),
+                      fontWeight: FontWeight.w600,
+                      color: failedRuleCount > 0
+                          ? const Color(0xFFC6284A)
+                          : const Color(0xFF21883B),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          const Divider(
-            height: 1,
-            color: Color(0xFFE0E0E4),
-          ),
-          ...ruleCheck.results
-              .asMap()
-              .entries
-              .map(
-            (entry) {
-              final rule = entry.value;
+          const Divider(height: 1, color: Color(0xFFE0E0E4)),
+          ...ruleCheck.results.asMap().entries.map((entry) {
+            final rule = entry.value;
 
-              return _buildRuleRow(
-                rule,
-                entry.key > 0,
-              );
-            },
-          ),
+            return _buildRuleRow(rule, entry.key > 0);
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildRuleRow(
-    TradeRuleResult rule,
-    bool hasTopBorder,
-  ) {
+  Widget _buildRuleRow(TradeRuleResult rule, bool hasTopBorder) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 11,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
       decoration: BoxDecoration(
-        color: rule.passed
-            ? Colors.white
-            : const Color(0xFFFFF8FA),
+        color: rule.passed ? Colors.white : const Color(0xFFFFF8FA),
         border: hasTopBorder
-            ? const Border(
-                top: BorderSide(
-                  color: Color(0xFFEEEEF1),
-                ),
-              )
+            ? const Border(top: BorderSide(color: Color(0xFFEEEEF1)))
             : null,
       ),
       child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            rule.passed
-                ? Icons.check_circle_outline
-                : Icons.cancel_outlined,
+            rule.passed ? Icons.check_circle_outline : Icons.cancel_outlined,
             size: 18,
             color: rule.passed
                 ? const Color(0xFF21883B)
@@ -988,18 +784,15 @@ class _AddTradePageState extends State<AddTradePage> {
           const SizedBox(width: 10),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   rule.label,
                   style: const TextStyle(
                     fontSize: 12,
                     height: 1.3,
-                    fontWeight:
-                        FontWeight.w600,
-                    color:
-                        Color(0xFF141A2E),
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF141A2E),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1009,12 +802,8 @@ class _AddTradePageState extends State<AddTradePage> {
                     fontSize: 11,
                     height: 1.4,
                     color: rule.passed
-                        ? const Color(
-                            0xFF74798A,
-                          )
-                        : const Color(
-                            0xFFA33A53,
-                          ),
+                        ? const Color(0xFF74798A)
+                        : const Color(0xFFA33A53),
                   ),
                 ),
               ],
@@ -1033,19 +822,13 @@ class _AddTradePageState extends State<AddTradePage> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(
-          color: const Color(0xFFD4D4DA),
-        ),
-        borderRadius:
-            BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFD4D4DA)),
+        borderRadius: BorderRadius.circular(16),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          _buildCalculatedRow(
-            'Investment',
-            '₹${invest.toStringAsFixed(2)}',
-          ),
+          _buildCalculatedRow('Investment', '₹${invest.toStringAsFixed(2)}'),
           _buildCalculatedRow(
             'Risk Amount',
             '₹${riskValue.toStringAsFixed(2)}',
@@ -1062,32 +845,19 @@ class _AddTradePageState extends State<AddTradePage> {
     bool border = false,
   }) {
     return Container(
-      constraints: const BoxConstraints(
-        minHeight: 58,
-      ),
-      padding:
-          const EdgeInsets.symmetric(
-        horizontal: 16,
-      ),
+      constraints: const BoxConstraints(minHeight: 58),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: border
           ? const BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                  color: Color(0xFFE0E0E4),
-                ),
-              ),
+              border: Border(top: BorderSide(color: Color(0xFFE0E0E4))),
             )
           : null,
       child: Row(
-        mainAxisAlignment:
-            MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 15,
-              color: Color(0xFF666B7A),
-            ),
+            style: const TextStyle(fontSize: 15, color: Color(0xFF666B7A)),
           ),
           Text(
             value,
@@ -1108,14 +878,10 @@ class _AddTradePageState extends State<AddTradePage> {
 
   Widget _buildNotes() {
     return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
-          padding: EdgeInsets.only(
-            left: 4,
-            bottom: 10,
-          ),
+          padding: EdgeInsets.only(left: 4, bottom: 10),
           child: Text.rich(
             TextSpan(
               children: [
@@ -1123,19 +889,13 @@ class _AddTradePageState extends State<AddTradePage> {
                   text: 'Notes ',
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight:
-                        FontWeight.w600,
-                    color:
-                        Color(0xFF141A2E),
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF141A2E),
                   ),
                 ),
                 TextSpan(
                   text: '(Optional)',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color:
-                        Color(0xFF74798A),
-                  ),
+                  style: TextStyle(fontSize: 13, color: Color(0xFF74798A)),
                 ),
               ],
             ),
@@ -1143,10 +903,8 @@ class _AddTradePageState extends State<AddTradePage> {
         ),
         _buildTextField(
           label: 'Notes',
-          placeholder:
-              'Add notes about this trade...',
-          controller:
-              _notesController,
+          placeholder: 'Add notes about this trade...',
+          controller: _notesController,
         ),
       ],
     );
@@ -1157,28 +915,20 @@ class _AddTradePageState extends State<AddTradePage> {
   // =========================================================
 
   Future<void> _selectTradeDate() async {
-    final currentDate =
-        _parseDate(
-      _tradeDateController.text,
-    );
+    final currentDate = _parseDate(_tradeDateController.text);
 
-    final selectedDate =
-        await showDatePicker(
+    final selectedDate = await showDatePicker(
       context: context,
-      initialDate:
-          currentDate ?? DateTime.now(),
-      firstDate:
-          DateTime(2000),
-      lastDate:
-          DateTime(2100),
+      initialDate: currentDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
     );
 
     if (selectedDate == null) {
       return;
     }
 
-    _tradeDateController.text =
-        _formatDate(selectedDate);
+    _tradeDateController.text = _formatDate(selectedDate);
 
     await _updateRuleCheck();
 
@@ -1224,8 +974,6 @@ class _AddTradePageState extends State<AddTradePage> {
   }
 
   String _generateId() {
-    return DateTime.now()
-        .microsecondsSinceEpoch
-        .toString();
+    return DateTime.now().microsecondsSinceEpoch.toString();
   }
 }
