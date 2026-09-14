@@ -143,7 +143,7 @@ String _dateToString(DateTime date) {
   Widget _buildCompletedBadge() {
     final profit = realizedProfit ?? 0;
     final rr = overallRR ?? 0;
-    final isWinning = rr >= 1;
+    final isWinning = rr > 0;
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -157,7 +157,7 @@ String _dateToString(DateTime date) {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        '${isWinning ? 'Winning Trade' : 'Loss Trade'} • '
+        // '${isWinning ? 'Winning Trade' : 'Loss Trade'} • '
         '${_formatMoney(profit)} • '
         '${rr.toStringAsFixed(2)}R',
         style: TextStyle(
@@ -253,49 +253,49 @@ String _dateToString(DateTime date) {
                     ),
                   ),
 
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (hasPartialBooking && !isCompleted)
-                        Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF7E6),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Icon(
-                            Icons.call_split_outlined,
-                            size: 16,
-                            color: Color(0xFFD98A00),
-                          ),
-                        ),
+              Row(
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    if (hasPartialBooking && !isCompleted)
+      Container(
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF7E6),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: const Icon(
+          Icons.call_split_outlined,
+          size: 16,
+          color: Color(0xFFD98A00),
+        ),
+      ),
 
-                      if (hasPartialBooking && !isCompleted)
-                        const SizedBox(width: 4),
+    if (hasPartialBooking && !isCompleted)
+      const SizedBox(width: 12),
 
-                      SizedBox(
-                        width: 28,
-                        height: 32,
-                        child: IconButton(
-                          onPressed: onMorePressed,
-                          tooltip: 'Trade actions',
-                          padding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact,
-                          constraints: const BoxConstraints(
-                            minWidth: 28,
-                            maxWidth: 28,
-                            minHeight: 32,
-                            maxHeight: 32,
-                          ),
-                          icon: const Icon(
-                            Icons.more_vert,
-                            size: 22,
-                            color: Color(0xFF6B7280),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+    SizedBox(
+      width: 28,
+      height: 32,
+      child: IconButton(
+        onPressed: onMorePressed,
+        tooltip: 'Trade actions',
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+        constraints: const BoxConstraints(
+          minWidth: 28,
+          maxWidth: 28,
+          minHeight: 32,
+          maxHeight: 32,
+        ),
+        icon: const Icon(
+          Icons.more_vert,
+          size: 22,
+          color: Color(0xFF6B7280),
+        ),
+      ),
+    ),
+  ],
+)
                 ],
               ),
 

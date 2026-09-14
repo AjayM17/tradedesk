@@ -132,7 +132,7 @@ class TradeDetailsPage extends StatelessWidget {
       return 'In Progress';
     }
 
-    return overallRR < 1.0
+    return overallRR <= 0.0
         ? 'Loss Trade'
         : 'Winning Trade';
   }

@@ -11,6 +11,16 @@ import 'services/trade_service.dart';
 import 'widgets/trade_card.dart';
 import 'widgets/trade_slot_card.dart';
 
+class PartialBookingResult {
+  final int quantity;
+  final double price;
+
+  const PartialBookingResult({
+    required this.quantity,
+    required this.price,
+  });
+}
+
 class TradesPage extends StatefulWidget {
   const TradesPage({super.key});
 
@@ -585,48 +595,45 @@ class _TradesPageState extends State<TradesPage> {
   // PARTIAL BOOK
   // ===========================================================
 
-  Future<void> showPartialBookDialog(TradeModel trade) async {
-    final bookings =
-        await _tradeService.getBookings(trade.id);
+Future<void> showPartialBookDialog(TradeModel trade) async {
+  final bookings = await _tradeService.getBookings(trade.id);
 
-    final bookedQuantity = bookings.fold<int>(
-      0,
-      (total, booking) => total + booking.quantity,
-    );
+  if (!mounted) return;
 
-    final remainingQuantity =
-        trade.quantity - bookedQuantity;
+  final bookedQuantity = bookings.fold<int>(
+    0,
+    (total, booking) => total + booking.quantity,
+  );
 
-    if (remainingQuantity <= 0) {
-      if (!mounted) {
-        return;
-      }
+  final remainingQuantity = trade.quantity - bookedQuantity;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'No remaining quantity available for partial booking.',
-          ),
+  if (remainingQuantity <= 0) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'No remaining quantity available for partial booking.',
         ),
-      );
-
-      return;
-    }
-
-    final defaultQuantity =
-        (remainingQuantity / 2).floor();
-
-    final quantityController = TextEditingController(
-      text: defaultQuantity.toString(),
+      ),
     );
 
-    final priceController = TextEditingController();
+    return;
+  }
 
-    final result = await showDialog<bool>(
+  final defaultQuantity = (remainingQuantity / 2).floor();
+
+  final quantityController = TextEditingController(
+    text: defaultQuantity.toString(),
+  );
+
+  final priceController = TextEditingController();
+
+  try {
+    final result = await showDialog<PartialBookingResult>(
       context: context,
+      barrierDismissible: false,
       builder: (dialogContext) {
         return StatefulBuilder(
-          builder: (context, setDialogState) {
+          builder: (dialogContext, setDialogState) {
             final quantity = int.tryParse(
               quantityController.text.trim(),
             );
@@ -640,21 +647,17 @@ class _TradesPageState extends State<TradesPage> {
                 quantity > 0 &&
                 quantity <= remainingQuantity;
 
-            final isPriceValid =
-                price != null && price > 0;
+            final isPriceValid = price != null && price > 0;
 
-            final canBook =
-                isQuantityValid && isPriceValid;
+            final canBook = isQuantityValid && isPriceValid;
 
             String? quantityError;
 
             if (quantityController.text.trim().isNotEmpty) {
               if (quantity == null || quantity <= 0) {
-                quantityError =
-                    'Quantity must be greater than 0';
+                quantityError = 'Quantity must be greater than 0';
               } else if (quantity > remainingQuantity) {
-                quantityError =
-                    'Maximum is $remainingQuantity';
+                quantityError = 'Maximum is $remainingQuantity';
               }
             }
 
@@ -662,8 +665,7 @@ class _TradesPageState extends State<TradesPage> {
 
             if (priceController.text.trim().isNotEmpty) {
               if (price == null || price <= 0) {
-                priceError =
-                    'Price must be greater than 0';
+                priceError = 'Price must be greater than 0';
               }
             }
 
@@ -682,9 +684,7 @@ class _TradesPageState extends State<TradesPage> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
                     TextField(
                       controller: quantityController,
                       keyboardType: TextInputType.number,
@@ -697,9 +697,7 @@ class _TradesPageState extends State<TradesPage> {
                         errorText: quantityError,
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     TextField(
                       controller: priceController,
                       keyboardType:
@@ -721,36 +719,19 @@ class _TradesPageState extends State<TradesPage> {
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.of(dialogContext).pop(false);
+                    Navigator.of(dialogContext).pop();
                   },
                   child: const Text('Cancel'),
                 ),
                 FilledButton(
                   onPressed: canBook
-                      ? () async {
-                          final booking =
-                              TradeBookingModel(
-                            id: DateTime
-                                .now()
-                                .microsecondsSinceEpoch
-                                .toString(),
-                            tradeId: trade.id,
-                            quantity: quantity!,
-                            price: price!,
-                            bookedAt: _dateToString(
-                              DateTime.now(),
+                      ? () {
+                          Navigator.of(dialogContext).pop(
+                            PartialBookingResult(
+                              quantity: quantity!,
+                              price: price!,
                             ),
                           );
-
-                          await _tradeService.addBooking(
-                            booking,
-                          );
-
-                          if (!dialogContext.mounted) {
-                            return;
-                          }
-
-                          Navigator.of(dialogContext).pop(true);
                         }
                       : null,
                   child: const Text('Book'),
@@ -762,14 +743,28 @@ class _TradesPageState extends State<TradesPage> {
       },
     );
 
+    if (result == null) return;
+
+    final booking = TradeBookingModel(
+      id: DateTime.now()
+          .microsecondsSinceEpoch
+          .toString(),
+      tradeId: trade.id,
+      quantity: result.quantity,
+      price: result.price,
+      bookedAt: _dateToString(DateTime.now()),
+    );
+
+    await _tradeService.addBooking(booking);
+
+    if (!mounted) return;
+
+    await _loadTrades();
+  } finally {
     quantityController.dispose();
     priceController.dispose();
-
-    if (result == true) {
-      await _loadTrades();
-    }
   }
-
+}
   // ===========================================================
   // DATE
   // ===========================================================
