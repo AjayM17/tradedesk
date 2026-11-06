@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:installed_apps/installed_apps.dart';
+import 'package:trade_desk/settings/settings_service.dart';
 
 import 'package:trade_desk/trades/add_trade/add_trade_page.dart';
 import 'package:trade_desk/trades/details/trade_details_page.dart';
@@ -56,6 +57,9 @@ class _TradesPageState extends State<TradesPage> {
   final TradeService _tradeService = TradeService();
 
   final TradeRulesService _tradeRulesService = TradeRulesService();
+  final SettingsService _settingsService = SettingsService();
+
+double _targetR = 3.0;
 
   List<TradeModel> _trades = [];
 
@@ -74,6 +78,8 @@ class _TradesPageState extends State<TradesPage> {
   // Completed-trade overall R.
   final Map<String, double> _overallRRs = {};
 
+  
+
   bool _isLoading = true;
 
   bool _canAddTrade = false;
@@ -81,7 +87,6 @@ class _TradesPageState extends State<TradesPage> {
   String? _addTradeBlockReason;
 
   int _availableTradeSlots = 0;
-
   @override
   void initState() {
     super.initState();
@@ -95,7 +100,7 @@ class _TradesPageState extends State<TradesPage> {
 
   Future<void> _loadTrades() async {
     final trades = await _tradeService.getTrades();
-
+final settings = await _settingsService.getSettings();
     final canAddTrade =
         await _tradeRulesService.canStartNewTrade(trades);
 
@@ -233,7 +238,7 @@ class _TradesPageState extends State<TradesPage> {
 
     setState(() {
       _trades = trades;
-
+  _targetR = settings.targetR;
       _bookedQuantities
         ..clear()
         ..addAll(bookedQuantities);
@@ -994,6 +999,7 @@ Future<void> showPartialBookDialog(TradeModel trade) async {
                       trade: trade,
                       remainingQuantity: remainingQuantity,
                       hasPartialBooking: hasPartialBooking,
+                        targetR: _targetR,
 
                       realizedProfit:
                           _realizedProfits[trade.id],

@@ -19,11 +19,13 @@ class TradeCard extends StatelessWidget {
 
   final VoidCallback? onTap;
   final VoidCallback? onMorePressed;
+  final double targetR;
 
   const TradeCard({
     super.key,
     required this.trade,
     required this.remainingQuantity,
+    required this.targetR,
     this.hasPartialBooking = false,
     this.realizedProfit,
     this.averageExitPrice,
@@ -66,6 +68,24 @@ class TradeCard extends StatelessWidget {
     return (riskPerShare / trade.entryPrice) * 100;
   }
 
+  double get targetPrice {
+    final riskPerShare = trade.entryPrice - trade.initialSL;
+
+    if (riskPerShare <= 0 || targetR <= 0) {
+      return trade.entryPrice;
+    }
+
+    return trade.entryPrice + (riskPerShare * targetR);
+  }
+
+  double get targetPercent {
+    if (trade.entryPrice <= 0) {
+      return 0;
+    }
+
+    return ((targetPrice - trade.entryPrice) / trade.entryPrice) * 100;
+  }
+
   double get slBuyValue {
     return (trade.stopLoss - trade.entryPrice) * remainingQuantity;
   }
@@ -78,49 +98,45 @@ class TradeCard extends StatelessWidget {
     return ((trade.stopLoss - trade.entryPrice) / trade.entryPrice) * 100;
   }
 
-String getTradeAge() {
-  final tradeDate = _parseDateOnly(trade.tradeDate);
+  String getTradeAge() {
+    final tradeDate = _parseDateOnly(trade.tradeDate);
 
-  if (tradeDate == null) {
-    return '-';
+    if (tradeDate == null) {
+      return '-';
+    }
+
+    final endDate = isCompleted && trade.completedAt != null
+        ? _parseDateOnly(trade.completedAt!)
+        : _parseDateOnly(_dateToString(DateTime.now()));
+
+    if (endDate == null) {
+      return '-';
+    }
+
+    final days = endDate.difference(tradeDate).inDays;
+
+    if (days <= 0) {
+      return 'Today';
+    }
+
+    return '$days ${days == 1 ? 'day' : 'days'}';
   }
 
-  final endDate = isCompleted && trade.completedAt != null
-      ? _parseDateOnly(trade.completedAt!)
-      : _parseDateOnly(_dateToString(DateTime.now()));
+  DateTime? _parseDateOnly(String dateString) {
+    final parsed = DateTime.tryParse(dateString);
 
-  if (endDate == null) {
-    return '-';
+    if (parsed == null) {
+      return null;
+    }
+
+    return DateTime(parsed.year, parsed.month, parsed.day);
   }
 
-  final days = endDate.difference(tradeDate).inDays;
-
-  if (days <= 0) {
-    return 'Today';
+  String _dateToString(DateTime date) {
+    return '${date.year.toString().padLeft(4, '0')}-'
+        '${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
   }
-
-  return '$days ${days == 1 ? 'day' : 'days'}';
-}
-
- DateTime? _parseDateOnly(String dateString) {
-  final parsed = DateTime.tryParse(dateString);
-
-  if (parsed == null) {
-    return null;
-  }
-
-  return DateTime(
-    parsed.year,
-    parsed.month,
-    parsed.day,
-  );
-}
-
-String _dateToString(DateTime date) {
-  return '${date.year.toString().padLeft(4, '0')}-'
-      '${date.month.toString().padLeft(2, '0')}-'
-      '${date.day.toString().padLeft(2, '0')}';
-}
 
   Color _statusColor() {
     switch (trade.status) {
@@ -145,28 +161,12 @@ String _dateToString(DateTime date) {
     final rr = overallRR ?? 0;
     final isWinning = rr > 0;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 6,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: isWinning
-            ? const Color(0xFFEDF9F1)
-            : const Color(0xFFFFF0F3),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        // '${isWinning ? 'Winning Trade' : 'Loss Trade'} • '
-        '${_formatMoney(profit)} • '
-        '${rr.toStringAsFixed(2)}R',
-        style: TextStyle(
-          color: isWinning
-              ? const Color(0xFF28A64D)
-              : const Color(0xFFC6284A),
-          fontWeight: FontWeight.w700,
-          fontSize: 11,
-        ),
+    return Text(
+      '${_formatMoney(profit)} • ${rr.toStringAsFixed(2)}R',
+      style: TextStyle(
+        color: isWinning ? const Color(0xFF28A64D) : const Color(0xFFC6284A),
+        fontWeight: FontWeight.w700,
+        fontSize: 11,
       ),
     );
   }
@@ -174,30 +174,16 @@ String _dateToString(DateTime date) {
   Widget _buildActiveBadge() {
     final isProtected = trade.stopLoss >= trade.entryPrice;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 6,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: isProtected
-            ? const Color(0xFFEDF9F1)
-            : const Color(0xFFFFF0F3),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        isProtected
-            ? '+₹${slBuyValue.toStringAsFixed(0)} • '
+    return Text(
+      isProtected
+          ? '+₹${slBuyValue.toStringAsFixed(0)} • '
                 '+${slBuyPercent.toStringAsFixed(1)}%'
-            : '-₹${riskValue.toStringAsFixed(0)} • '
+          : '-₹${riskValue.toStringAsFixed(0)} • '
                 '${riskPercent.toStringAsFixed(1)}%',
-        style: TextStyle(
-          color: isProtected
-              ? const Color(0xFF28A64D)
-              : const Color(0xFFC6284A),
-          fontWeight: FontWeight.w700,
-          fontSize: 11,
-        ),
+      style: TextStyle(
+        color: isProtected ? const Color(0xFF28A64D) : const Color(0xFFC6284A),
+        fontWeight: FontWeight.w700,
+        fontSize: 11,
       ),
     );
   }
@@ -208,9 +194,7 @@ String _dateToString(DateTime date) {
       margin: EdgeInsets.zero,
       elevation: 0,
       color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -253,49 +237,49 @@ String _dateToString(DateTime date) {
                     ),
                   ),
 
-              Row(
-  mainAxisSize: MainAxisSize.min,
-  children: [
-    if (hasPartialBooking && !isCompleted)
-      Container(
-        padding: const EdgeInsets.all(5),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF7E6),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: const Icon(
-          Icons.call_split_outlined,
-          size: 16,
-          color: Color(0xFFD98A00),
-        ),
-      ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (hasPartialBooking && !isCompleted)
+                        Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF7E6),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(
+                            Icons.call_split_outlined,
+                            size: 16,
+                            color: Color(0xFFD98A00),
+                          ),
+                        ),
 
-    if (hasPartialBooking && !isCompleted)
-      const SizedBox(width: 12),
+                      if (hasPartialBooking && !isCompleted)
+                        const SizedBox(width: 12),
 
-    SizedBox(
-      width: 28,
-      height: 32,
-      child: IconButton(
-        onPressed: onMorePressed,
-        tooltip: 'Trade actions',
-        padding: EdgeInsets.zero,
-        visualDensity: VisualDensity.compact,
-        constraints: const BoxConstraints(
-          minWidth: 28,
-          maxWidth: 28,
-          minHeight: 32,
-          maxHeight: 32,
-        ),
-        icon: const Icon(
-          Icons.more_vert,
-          size: 22,
-          color: Color(0xFF6B7280),
-        ),
-      ),
-    ),
-  ],
-)
+                      SizedBox(
+                        width: 28,
+                        height: 32,
+                        child: IconButton(
+                          onPressed: onMorePressed,
+                          tooltip: 'Trade actions',
+                          padding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                          constraints: const BoxConstraints(
+                            minWidth: 28,
+                            maxWidth: 28,
+                            minHeight: 32,
+                            maxHeight: 32,
+                          ),
+                          icon: const Icon(
+                            Icons.more_vert,
+                            size: 22,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
 
@@ -311,10 +295,7 @@ String _dateToString(DateTime date) {
                       isCompleted ? 'Exited Qty' : 'Qty',
                       displayedQuantity.toString(),
                     ),
-                    _metric(
-                      'Buy',
-                      trade.entryPrice.toStringAsFixed(2),
-                    ),
+                    _metric('Buy', trade.entryPrice.toStringAsFixed(2)),
                     _metric(
                       isCompleted ? 'Avg Exit' : 'SL',
                       isCompleted
@@ -333,18 +314,12 @@ String _dateToString(DateTime date) {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _smallKv(
-                      'Init SL',
-                      trade.initialSL.toStringAsFixed(2),
-                    ),
+                    _smallKv('Init SL', trade.initialSL.toStringAsFixed(2)),
                     _smallKv(
                       'Invested',
                       '₹${investmentValue.toStringAsFixed(0)}',
                     ),
-                    _smallKv(
-                      'Age',
-                      getTradeAge(),
-                    ),
+                    _smallKv('Age', getTradeAge()),
                   ],
                 ),
               ),
@@ -352,9 +327,27 @@ String _dateToString(DateTime date) {
               const SizedBox(height: 10),
 
               // BADGE
-              isCompleted
-                  ? _buildCompletedBadge()
-                  : _buildActiveBadge(),
+              // P&L + TARGET
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: isCompleted
+                        ? _buildCompletedBadge()
+                        : _buildActiveBadge(),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Target: ₹${targetPrice.toStringAsFixed(2)} • '
+                    '+${targetPercent.toStringAsFixed(1)}%',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                ],
+              ),
 
               // NOTES
               if (trade.notes != null && trade.notes!.isNotEmpty) ...[
@@ -365,11 +358,7 @@ String _dateToString(DateTime date) {
                     width: double.infinity,
                     padding: const EdgeInsets.only(top: 8),
                     decoration: const BoxDecoration(
-                      border: Border(
-                        top: BorderSide(
-                          color: Color(0xFFEEEEF1),
-                        ),
-                      ),
+                      border: Border(top: BorderSide(color: Color(0xFFEEEEF1))),
                     ),
                     child: Text(
                       'Note: ${trade.notes}',

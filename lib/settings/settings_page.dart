@@ -43,6 +43,8 @@ class _SettingsPageState extends State<SettingsPage> {
   late final TextEditingController
       _maxPortfolioRiskPercentController;
 
+      late final TextEditingController _targetRController;
+
   @override
   void initState() {
     super.initState();
@@ -70,6 +72,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     _maxPortfolioRiskPercentController =
         TextEditingController();
+        _targetRController = TextEditingController();
 
     _loadSettings();
   }
@@ -84,7 +87,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _maxInvestmentPerTradeController.dispose();
     _totalInvestmentController.dispose();
     _maxPortfolioRiskPercentController.dispose();
-
+_targetRController.dispose();
     super.dispose();
   }
 
@@ -128,6 +131,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
     _maxPortfolioRiskPercentController.text =
         settings.maxPortfolioRiskPercent.toString();
+        _targetRController.text =
+    settings.targetR.toString();
   }
 
   SettingsModel? _buildSettingsFromFields() {
@@ -171,6 +176,10 @@ class _SettingsPageState extends State<SettingsPage> {
       _maxPortfolioRiskPercentController.text,
     );
 
+    final targetR = double.tryParse(
+  _targetRController.text,
+);
+
     if (maxActiveTrades == null ||
         maxTradesPerMonth == null ||
         maxTradesPerThreeMonths == null ||
@@ -178,7 +187,8 @@ class _SettingsPageState extends State<SettingsPage> {
         maxRiskPercentPerTrade == null ||
         maxInvestmentPerTrade == null ||
         totalInvestment == null ||
-        maxPortfolioRiskPercent == null) {
+        maxPortfolioRiskPercent == null ||
+        targetR == null) {
       return null;
     }
 
@@ -195,6 +205,7 @@ class _SettingsPageState extends State<SettingsPage> {
       totalInvestment: totalInvestment,
       maxPortfolioRiskPercent:
           maxPortfolioRiskPercent,
+          targetR: targetR,
     );
   }
 
@@ -442,6 +453,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 controller:
                     _maxRiskPercentPerTradeController,
               ),
+              _buildNumberField(
+  label: 'Target R',
+  controller: _targetRController,
+),
 
               _buildNumberField(
                 label:

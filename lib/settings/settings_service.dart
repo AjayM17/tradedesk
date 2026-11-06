@@ -16,6 +16,7 @@ class SettingsService {
     maxInvestmentPerTrade: 300000,
     totalInvestment: 2000000,
     maxPortfolioRiskPercent: 3,
+    targetR: 3.0,
   );
 
   /// Loads settings from local storage.
@@ -84,6 +85,11 @@ class SettingsService {
           decoded,
           'maxPortfolioRiskPercent',
           _defaultSettings.maxPortfolioRiskPercent,
+        ),
+        targetR: _readDouble(
+          decoded,
+          'targetR',
+          _defaultSettings.targetR,
         ),
       );
     } catch (_) {

@@ -9,6 +9,7 @@ class SettingsModel {
   final double maxInvestmentPerTrade;
   final double totalInvestment;
   final double maxPortfolioRiskPercent;
+  final double targetR;
 
   const SettingsModel({
     required this.maxActiveTrades,
@@ -19,6 +20,7 @@ class SettingsModel {
     required this.maxInvestmentPerTrade,
     required this.totalInvestment,
     required this.maxPortfolioRiskPercent,
+    required this.targetR,
   });
 
   /// Maximum amount of portfolio risk allowed.
@@ -35,6 +37,7 @@ class SettingsModel {
         maxRiskPercentPerTrade > 0 &&
         maxInvestmentPerTrade > 0 &&
         totalInvestment > 0 &&
+        targetR > 0 &&
         maxPortfolioRiskPercent > 0;
   }
 
@@ -48,6 +51,7 @@ class SettingsModel {
     double? maxInvestmentPerTrade,
     double? totalInvestment,
     double? maxPortfolioRiskPercent,
+    double? targetR,
   }) {
     return SettingsModel(
       maxActiveTrades:
@@ -66,6 +70,8 @@ class SettingsModel {
           totalInvestment ?? this.totalInvestment,
       maxPortfolioRiskPercent:
           maxPortfolioRiskPercent ?? this.maxPortfolioRiskPercent,
+           targetR:
+      targetR ?? this.targetR,
     );
   }
 
@@ -80,6 +86,7 @@ class SettingsModel {
       'maxInvestmentPerTrade': maxInvestmentPerTrade,
       'totalInvestment': totalInvestment,
       'maxPortfolioRiskPercent': maxPortfolioRiskPercent,
+      'targetR': targetR,
     };
   }
 
@@ -104,6 +111,8 @@ class SettingsModel {
           (json['totalInvestment'] as num).toDouble(),
       maxPortfolioRiskPercent:
           (json['maxPortfolioRiskPercent'] as num).toDouble(),
+         targetR:
+        (json['targetR'] as num?)?.toDouble() ?? 3.0,
     );
   }
 }
