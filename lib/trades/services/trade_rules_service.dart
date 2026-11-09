@@ -48,12 +48,12 @@ class TradeRulesService {
       _checkRiskPercentage(trade, settings.maxRiskPercentPerTrade),
       _checkInvestment(trade, settings.maxInvestmentPerTrade),
       _checkActiveTrades(otherTrades, settings.maxActiveTrades),
-      _checkMonthlyLimit(trade, otherTrades, settings.maxTradesPerMonth),
-      _checkQuarterlyLimit(
-        trade,
-        otherTrades,
-        settings.maxTradesPerThreeMonths,
-      ),
+      // _checkMonthlyLimit(trade, otherTrades, settings.maxTradesPerMonth),
+      // _checkQuarterlyLimit(
+      //   trade,
+      //   otherTrades,
+      //   settings.maxTradesPerThreeMonths,
+      // ),
       _checkPortfolioRisk(
         trade,
         otherTrades,
@@ -385,171 +385,253 @@ class TradeRulesService {
   // =========================================================
 
   Future<bool> canStartNewTrade(List<TradeModel> trades) async {
-    final settings = await _settingsService.getSettings();
+  final settings = await _settingsService.getSettings();
 
-    // 1. Active capacity
-    final activeTrades = trades
-        .where((trade) => trade.status == TradeStatus.active)
-        .length;
+  // 1. Active trade capacity
+  final activeTrades = trades
+      .where((trade) => trade.status == TradeStatus.active)
+      .length;
 
-    if (activeTrades >= settings.maxActiveTrades) {
-      return false;
-    }
-
-    // 2. Monthly capacity
-    final today = DateTime.now();
-
-    final todayString =
-        '${today.year.toString().padLeft(4, '0')}-'
-        '${today.month.toString().padLeft(2, '0')}-'
-        '${today.day.toString().padLeft(2, '0')}';
-
-    final previewTrade = TradeModel(
-      id: 'new-trade-preview',
-      symbol: 'Preview',
-      tradeDate: todayString,
-      entryPrice: 1,
-      stopLoss: 1,
-      initialSL: 1,
-      quantity: 1,
-      status: TradeStatus.active,
-      notes: '',
-    );
-
-    final monthlyResult = _checkMonthlyLimit(
-      previewTrade,
-      trades,
-      settings.maxTradesPerMonth,
-    );
-
-    if (!monthlyResult.passed) {
-      return false;
-    }
-
-    // 3. Quarterly capacity
-    final quarterlyResult = _checkQuarterlyLimit(
-      previewTrade,
-      trades,
-      settings.maxTradesPerThreeMonths,
-    );
-
-    if (!quarterlyResult.passed) {
-      return false;
-    }
-
-    // 4. Current portfolio risk
-    final currentPortfolioRisk = trades
-        .where((trade) => trade.status == TradeStatus.active)
-        .fold<double>(0, (total, trade) => total + _getRiskValue(trade));
-
-    final maxPortfolioRisk =
-        settings.totalInvestment * settings.maxPortfolioRiskPercent / 100;
-
-    if (currentPortfolioRisk >= maxPortfolioRisk) {
-      return false;
-    }
-
-    return true;
+  if (activeTrades >= settings.maxActiveTrades) {
+    return false;
   }
+
+  // 2. Current portfolio risk
+  final currentPortfolioRisk = trades
+      .where((trade) => trade.status == TradeStatus.active)
+      .fold<double>(
+        0,
+        (total, trade) => total + _getRiskValue(trade),
+      );
+
+  final maxPortfolioRisk =
+      settings.totalInvestment *
+      settings.maxPortfolioRiskPercent / 100;
+
+  if (currentPortfolioRisk >= maxPortfolioRisk) {
+    return false;
+  }
+
+  return true;
+}
+
+  // Future<bool> canStartNewTrade(List<TradeModel> trades) async {
+  //   final settings = await _settingsService.getSettings();
+
+  //   // 1. Active capacity
+  //   final activeTrades = trades
+  //       .where((trade) => trade.status == TradeStatus.active)
+  //       .length;
+
+  //   if (activeTrades >= settings.maxActiveTrades) {
+  //     return false;
+  //   }
+
+  //   // 2. Monthly capacity
+  //   final today = DateTime.now();
+
+  //   final todayString =
+  //       '${today.year.toString().padLeft(4, '0')}-'
+  //       '${today.month.toString().padLeft(2, '0')}-'
+  //       '${today.day.toString().padLeft(2, '0')}';
+
+  //   final previewTrade = TradeModel(
+  //     id: 'new-trade-preview',
+  //     symbol: 'Preview',
+  //     tradeDate: todayString,
+  //     entryPrice: 1,
+  //     stopLoss: 1,
+  //     initialSL: 1,
+  //     quantity: 1,
+  //     status: TradeStatus.active,
+  //     notes: '',
+  //   );
+
+  //   final monthlyResult = _checkMonthlyLimit(
+  //     previewTrade,
+  //     trades,
+  //     settings.maxTradesPerMonth,
+  //   );
+
+  //   if (!monthlyResult.passed) {
+  //     return false;
+  //   }
+
+  //   // 3. Quarterly capacity
+  //   final quarterlyResult = _checkQuarterlyLimit(
+  //     previewTrade,
+  //     trades,
+  //     settings.maxTradesPerThreeMonths,
+  //   );
+
+  //   if (!quarterlyResult.passed) {
+  //     return false;
+  //   }
+
+  //   // 4. Current portfolio risk
+  //   final currentPortfolioRisk = trades
+  //       .where((trade) => trade.status == TradeStatus.active)
+  //       .fold<double>(0, (total, trade) => total + _getRiskValue(trade));
+
+  //   final maxPortfolioRisk =
+  //       settings.totalInvestment * settings.maxPortfolioRiskPercent / 100;
+
+  //   if (currentPortfolioRisk >= maxPortfolioRisk) {
+  //     return false;
+  //   }
+
+  //   return true;
+  // }
 
   // =========================================================
   // NEW TRADE BLOCK REASON
   // =========================================================
 
-  Future<String?> getNewTradeBlockReason(List<TradeModel> trades) async {
-    final settings = await _settingsService.getSettings();
+  Future<String?> getNewTradeBlockReason(
+  List<TradeModel> trades,
+) async {
+  final settings = await _settingsService.getSettings();
 
-    // 1. Active capacity
-    final activeTrades = trades
-        .where((trade) => trade.status == TradeStatus.active)
-        .length;
+  // 1. Active trade capacity
+  final activeTrades = trades
+      .where((trade) => trade.status == TradeStatus.active)
+      .length;
 
-    if (activeTrades >= settings.maxActiveTrades) {
-      return 'Maximum active trades reached: '
-          '$activeTrades / '
-          '${settings.maxActiveTrades}.';
-    }
-
-    // 2. Monthly capacity
-    final today = DateTime.now();
-
-    final todayString =
-        '${today.year.toString().padLeft(4, '0')}-'
-        '${today.month.toString().padLeft(2, '0')}-'
-        '${today.day.toString().padLeft(2, '0')}';
-
-    final previewTrade = TradeModel(
-      id: 'new-trade-preview',
-      symbol: 'Preview',
-      tradeDate: todayString,
-      entryPrice: 1,
-      stopLoss: 1,
-      initialSL: 1,
-      quantity: 1,
-      status: TradeStatus.active,
-      notes: '',
-    );
-
-    final monthlyResult = _checkMonthlyLimit(
-      previewTrade,
-      trades,
-      settings.maxTradesPerMonth,
-    );
-
-    if (!monthlyResult.passed) {
-      return monthlyResult.message;
-    }
-
-    // 3. Quarterly capacity
-    final quarterlyResult = _checkQuarterlyLimit(
-      previewTrade,
-      trades,
-      settings.maxTradesPerThreeMonths,
-    );
-
-    if (!quarterlyResult.passed) {
-      return quarterlyResult.message;
-    }
-
-    // 4. Portfolio risk
-    final currentPortfolioRisk = trades
-        .where((trade) => trade.status == TradeStatus.active)
-        .fold<double>(0, (total, trade) => total + _getRiskValue(trade));
-
-    final maxPortfolioRisk =
-        settings.totalInvestment * settings.maxPortfolioRiskPercent / 100;
-
-    if (currentPortfolioRisk >= maxPortfolioRisk) {
-      return 'Portfolio risk limit reached: '
-          '₹${currentPortfolioRisk.toStringAsFixed(2)} / '
-          '₹${maxPortfolioRisk.toStringAsFixed(2)}.';
-    }
-
-    return null;
+  if (activeTrades >= settings.maxActiveTrades) {
+    return 'Maximum active trades reached: '
+        '$activeTrades / ${settings.maxActiveTrades}.';
   }
+
+  // 2. Portfolio risk
+  final currentPortfolioRisk = trades
+      .where((trade) => trade.status == TradeStatus.active)
+      .fold<double>(
+        0,
+        (total, trade) => total + _getRiskValue(trade),
+      );
+
+  final maxPortfolioRisk =
+      settings.totalInvestment *
+      settings.maxPortfolioRiskPercent / 100;
+
+  if (currentPortfolioRisk >= maxPortfolioRisk) {
+    return 'Portfolio risk limit reached: '
+        '₹${currentPortfolioRisk.toStringAsFixed(2)} / '
+        '₹${maxPortfolioRisk.toStringAsFixed(2)}.';
+  }
+
+  return null;
+}
+
+  // Future<String?> getNewTradeBlockReason(List<TradeModel> trades) async {
+  //   final settings = await _settingsService.getSettings();
+
+  //   // 1. Active capacity
+  //   final activeTrades = trades
+  //       .where((trade) => trade.status == TradeStatus.active)
+  //       .length;
+
+  //   if (activeTrades >= settings.maxActiveTrades) {
+  //     return 'Maximum active trades reached: '
+  //         '$activeTrades / '
+  //         '${settings.maxActiveTrades}.';
+  //   }
+
+  //   // 2. Monthly capacity
+  //   final today = DateTime.now();
+
+  //   final todayString =
+  //       '${today.year.toString().padLeft(4, '0')}-'
+  //       '${today.month.toString().padLeft(2, '0')}-'
+  //       '${today.day.toString().padLeft(2, '0')}';
+
+  //   final previewTrade = TradeModel(
+  //     id: 'new-trade-preview',
+  //     symbol: 'Preview',
+  //     tradeDate: todayString,
+  //     entryPrice: 1,
+  //     stopLoss: 1,
+  //     initialSL: 1,
+  //     quantity: 1,
+  //     status: TradeStatus.active,
+  //     notes: '',
+  //   );
+
+  //   final monthlyResult = _checkMonthlyLimit(
+  //     previewTrade,
+  //     trades,
+  //     settings.maxTradesPerMonth,
+  //   );
+
+  //   if (!monthlyResult.passed) {
+  //     return monthlyResult.message;
+  //   }
+
+  //   // 3. Quarterly capacity
+  //   final quarterlyResult = _checkQuarterlyLimit(
+  //     previewTrade,
+  //     trades,
+  //     settings.maxTradesPerThreeMonths,
+  //   );
+
+  //   if (!quarterlyResult.passed) {
+  //     return quarterlyResult.message;
+  //   }
+
+  //   // 4. Portfolio risk
+  //   final currentPortfolioRisk = trades
+  //       .where((trade) => trade.status == TradeStatus.active)
+  //       .fold<double>(0, (total, trade) => total + _getRiskValue(trade));
+
+  //   final maxPortfolioRisk =
+  //       settings.totalInvestment * settings.maxPortfolioRiskPercent / 100;
+
+  //   if (currentPortfolioRisk >= maxPortfolioRisk) {
+  //     return 'Portfolio risk limit reached: '
+  //         '₹${currentPortfolioRisk.toStringAsFixed(2)} / '
+  //         '₹${maxPortfolioRisk.toStringAsFixed(2)}.';
+  //   }
+
+  //   return null;
+  // }
 
   // =========================================================
   // TRADE LIST SLOT COUNT
   // =========================================================
 
-  Future<int> getAvailableTradeSlots(List<TradeModel> trades) async {
-    final settings = await _settingsService.getSettings();
+  Future<int> getAvailableTradeSlots(
+  List<TradeModel> trades,
+) async {
+  final settings = await _settingsService.getSettings();
 
-    // Active and Completed both occupy a trade slot.
-    //
-    // Waiting is Watchlist and is completely ignored.
-    final usedSlots = trades
-        .where(
-          (trade) =>
-              trade.status == TradeStatus.active ||
-              trade.status == TradeStatus.completed,
-        )
-        .length;
+  final activeTrades = trades
+      .where((trade) => trade.status == TradeStatus.active)
+      .length;
 
-    final availableSlots = settings.maxActiveTrades - usedSlots;
+  return _max(
+    0,
+    settings.maxActiveTrades - activeTrades,
+  );
+}
 
-    return _max(0, availableSlots);
-  }
+  // Future<int> getAvailableTradeSlots(List<TradeModel> trades) async {
+  //   final settings = await _settingsService.getSettings();
+
+  //   // Active and Completed both occupy a trade slot.
+  //   //
+  //   // Waiting is Watchlist and is completely ignored.
+  //   final usedSlots = trades
+  //       .where(
+  //         (trade) =>
+  //             trade.status == TradeStatus.active ||
+  //             trade.status == TradeStatus.completed,
+  //       )
+  //       .length;
+
+  //   final availableSlots = settings.maxActiveTrades - usedSlots;
+
+  //   return _max(0, availableSlots);
+  // }
 
   // =========================================================
   // QUARTER HELPERS

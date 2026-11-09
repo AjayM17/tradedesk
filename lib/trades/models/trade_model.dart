@@ -15,6 +15,7 @@ class TradeModel {
   final TradeStatus status;
   final String? completedAt;
   final String? notes;
+  double get trailingSL => stopLoss;
 
   const TradeModel({
     required this.id,

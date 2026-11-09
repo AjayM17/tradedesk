@@ -10,6 +10,7 @@ class SettingsModel {
   final double totalInvestment;
   final double maxPortfolioRiskPercent;
   final double targetR;
+  final bool showOnlyActiveTrades;
 
   const SettingsModel({
     required this.maxActiveTrades,
@@ -21,6 +22,7 @@ class SettingsModel {
     required this.totalInvestment,
     required this.maxPortfolioRiskPercent,
     required this.targetR,
+    required this.showOnlyActiveTrades,
   });
 
   /// Maximum amount of portfolio risk allowed.
@@ -29,17 +31,27 @@ class SettingsModel {
   }
 
   /// Same validation behavior as Ionic V1 canSave.
+  // bool get canSave {
+  //   return maxActiveTrades > 0 &&
+  //       maxTradesPerMonth > 0 &&
+  //       maxTradesPerThreeMonths > 0 &&
+  //       maxRiskPerTrade > 0 &&
+  //       maxRiskPercentPerTrade > 0 &&
+  //       maxInvestmentPerTrade > 0 &&
+  //       totalInvestment > 0 &&
+  //       targetR > 0 &&
+  //       maxPortfolioRiskPercent > 0;
+  // }
+
   bool get canSave {
-    return maxActiveTrades > 0 &&
-        maxTradesPerMonth > 0 &&
-        maxTradesPerThreeMonths > 0 &&
-        maxRiskPerTrade > 0 &&
-        maxRiskPercentPerTrade > 0 &&
-        maxInvestmentPerTrade > 0 &&
-        totalInvestment > 0 &&
-        targetR > 0 &&
-        maxPortfolioRiskPercent > 0;
-  }
+  return maxActiveTrades > 0 &&
+      maxRiskPerTrade > 0 &&
+      maxRiskPercentPerTrade > 0 &&
+      maxInvestmentPerTrade > 0 &&
+      totalInvestment > 0 &&
+      targetR > 0 &&
+      maxPortfolioRiskPercent > 0;
+}
 
   /// Creates a copy with only the provided values changed.
   SettingsModel copyWith({
@@ -52,6 +64,7 @@ class SettingsModel {
     double? totalInvestment,
     double? maxPortfolioRiskPercent,
     double? targetR,
+    bool? showOnlyActiveTrades,
   }) {
     return SettingsModel(
       maxActiveTrades:
@@ -72,6 +85,8 @@ class SettingsModel {
           maxPortfolioRiskPercent ?? this.maxPortfolioRiskPercent,
            targetR:
       targetR ?? this.targetR,
+      showOnlyActiveTrades:
+    showOnlyActiveTrades ?? this.showOnlyActiveTrades,
     );
   }
 
@@ -87,6 +102,7 @@ class SettingsModel {
       'totalInvestment': totalInvestment,
       'maxPortfolioRiskPercent': maxPortfolioRiskPercent,
       'targetR': targetR,
+      'showOnlyActiveTrades': showOnlyActiveTrades,
     };
   }
 
@@ -113,6 +129,8 @@ class SettingsModel {
           (json['maxPortfolioRiskPercent'] as num).toDouble(),
          targetR:
         (json['targetR'] as num?)?.toDouble() ?? 3.0,
+        showOnlyActiveTrades:
+    (json['showOnlyActiveTrades'] as bool?) ?? true,
     );
   }
 }

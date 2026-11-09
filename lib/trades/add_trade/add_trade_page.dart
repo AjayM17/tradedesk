@@ -32,7 +32,6 @@ class _AddTradePageState extends State<AddTradePage> {
 
   bool _isLoading = true;
   bool _isSaving = false;
-  bool _initialSLEditable = false;
 
   double _maxInvest = 300000;
   double _maxRisk = 15000;
@@ -103,23 +102,23 @@ class _AddTradePageState extends State<AddTradePage> {
     await _updateRuleCheck();
   }
 
-  void _loadTradeForEdit(TradeModel trade) {
-    _symbolController.text = trade.symbol;
 
-    _tradeDateController.text = trade.tradeDate;
+void _loadTradeForEdit(TradeModel trade) {
+  _symbolController.text = trade.symbol;
 
-    _entryPriceController.text = _formatNumber(trade.entryPrice);
+  _tradeDateController.text = trade.tradeDate;
 
-    _stopLossController.text = _formatNumber(trade.stopLoss);
+  _entryPriceController.text = _formatNumber(trade.entryPrice);
 
-    _initialSLController.text = _formatNumber(trade.initialSL);
+  _stopLossController.text = _formatNumber(trade.stopLoss);
 
-    _quantityController.text = trade.quantity.toString();
+  _initialSLController.text = _formatNumber(trade.initialSL);
 
-    _notesController.text = trade.notes ?? '';
+  _quantityController.text = trade.quantity.toString();
 
-    _initialSLEditable = false;
-  }
+  _notesController.text = trade.notes ?? '';
+}
+
 
   // =========================================================
   // Input values
@@ -147,13 +146,14 @@ class _AddTradePageState extends State<AddTradePage> {
 
   int _calculateQuantity() {
     final entryPrice = _entryPrice;
-    final stopLoss = _stopLoss;
+    final initialSL = _initialSL;
 
-    if (entryPrice == null || stopLoss == null || entryPrice <= 0) {
+    if (entryPrice == null || initialSL == null || entryPrice <= 0) {
       return 0;
     }
 
-    final riskPerShare = entryPrice - stopLoss;
+    // Quantity is always calculated from Initial SL, not Trailing SL.
+    final riskPerShare = entryPrice - initialSL;
 
     // SL >= Buy:
     // This is a protected/profitable long trade.
@@ -171,27 +171,39 @@ class _AddTradePageState extends State<AddTradePage> {
         : quantityByInvestment;
   }
 
+  void _recalculateQuantity() {
+    final quantity = _calculateQuantity();
+    _quantityController.text = quantity.toString();
+  }
+
   void _onEntryPriceChange() {
-    if (!isEditMode) {
-      final quantity = _calculateQuantity();
+    // Recalculate in both Add and Edit modes.
+    _recalculateQuantity();
+    _updateRuleCheck();
+  }
 
-      _quantityController.text = quantity.toString();
+  void _onInitialSLChange() {
+    final initialSL = _initialSL;
+
+    if (initialSL != null && initialSL > 0) {
+      if (!isEditMode) {
+        // A new trade always starts with Trailing SL equal to Initial SL.
+        _stopLossController.text = _initialSLController.text;
+      } else {
+        // Never allow Trailing SL to fall below Initial SL.
+        final trailingSL = _stopLoss;
+        if (trailingSL == null || trailingSL < initialSL) {
+          _stopLossController.text = _initialSLController.text;
+        }
+      }
+
+      // Initial SL changes must recalculate quantity in both modes.
+      _recalculateQuantity();
     }
 
     _updateRuleCheck();
   }
 
-  void _onStopLossChange() {
-    if (!isEditMode) {
-      _initialSLController.text = _stopLossController.text;
-
-      final quantity = _calculateQuantity();
-
-      _quantityController.text = quantity.toString();
-    }
-
-    _updateRuleCheck();
-  }
 
   void _onTradeDateChange() {
     _updateRuleCheck();
@@ -201,17 +213,7 @@ class _AddTradePageState extends State<AddTradePage> {
     _updateRuleCheck();
   }
 
-  void _onInitialSLToggleChange(bool value) {
-    setState(() {
-      _initialSLEditable = value;
 
-      if (!value && widget.tradeToEdit != null) {
-        _initialSLController.text = _formatNumber(
-          widget.tradeToEdit!.initialSL,
-        );
-      }
-    });
-  }
 
   // =========================================================
   // Calculations
@@ -278,6 +280,7 @@ class _AddTradePageState extends State<AddTradePage> {
         _stopLoss! > 0 &&
         _initialSL != null &&
         _initialSL! > 0 &&
+        _stopLoss! >= _initialSL! &&
         _quantity != null &&
         _quantity! > 0;
   }
@@ -563,35 +566,28 @@ class _AddTradePageState extends State<AddTradePage> {
         ),
 
         _buildTextField(
-          label: 'Stop Loss',
-          placeholder: 'Enter stop loss',
-          controller: _stopLossController,
+          label: 'Initial SL',
+          placeholder: 'Enter initial stop loss',
+          controller: _initialSLController,
           number: true,
           onChanged: (_) {
-            _onStopLossChange();
+            _onInitialSLChange();
           },
         ),
 
-        Row(
-          children: [
-            Expanded(
-              child: _buildTextField(
-                label: 'Initial Stop Loss',
-                controller: _initialSLController,
-                number: true,
-                readOnly: isEditMode && !_initialSLEditable,
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 16),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Trailing SL: ${_stopLoss == null ? "—" : _formatNumber(_stopLoss!)}',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF74798A),
               ),
             ),
-
-            if (isEditMode)
-              Padding(
-                padding: const EdgeInsets.only(left: 8, bottom: 12),
-                child: Switch(
-                  value: _initialSLEditable,
-                  onChanged: _onInitialSLToggleChange,
-                ),
-              ),
-          ],
+          ),
         ),
       ],
     );

@@ -22,11 +22,114 @@ class PartialBookingResult {
   });
 }
 
+class _UpdateTrailingSLDialog extends StatefulWidget {
+  final TradeModel trade;
+
+  const _UpdateTrailingSLDialog({
+    required this.trade,
+  });
+
+  @override
+  State<_UpdateTrailingSLDialog> createState() =>
+      _UpdateTrailingSLDialogState();
+}
+
+class _UpdateTrailingSLDialogState
+    extends State<_UpdateTrailingSLDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.trade.stopLoss.toString(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final trade = widget.trade;
+    final value = double.tryParse(_controller.text.trim());
+
+    final isValid = value != null &&
+        value > 0 &&
+        value >= trade.initialSL;
+
+    String? errorText;
+
+    if (_controller.text.trim().isNotEmpty) {
+      if (value == null || value <= 0) {
+        errorText = 'Enter a valid positive price';
+      } else if (value < trade.initialSL) {
+        errorText =
+            'Trailing SL cannot be below Initial SL '
+            '(${trade.initialSL.toStringAsFixed(2)})';
+      }
+    }
+
+    return AlertDialog(
+      title: const Text('Update Trailing SL'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Symbol: ${trade.symbol}'),
+          const SizedBox(height: 6),
+          Text(
+            'Initial SL: ${trade.initialSL.toStringAsFixed(2)}',
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(
+              decimal: true,
+            ),
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              labelText: 'New Trailing SL',
+              border: const OutlineInputBorder(),
+              errorText: errorText,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'You can move Trailing SL up or down, but it '
+            'must not be lower than Initial SL.',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.black54,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: isValid
+              ? () => Navigator.of(context).pop(value)
+              : null,
+          child: const Text('Update'),
+        ),
+      ],
+    );
+  }
+}
+
 class TradesPage extends StatefulWidget {
   const TradesPage({super.key});
 
   @override
-  State<TradesPage> createState() => _TradesPageState();
+  State<TradesPage> createState() => TradesPageState();
 }
 
 // =============================================================
@@ -53,13 +156,14 @@ class _TradeLoadSummary {
 // STATE
 // =============================================================
 
-class _TradesPageState extends State<TradesPage> {
+class TradesPageState extends State<TradesPage> {
   final TradeService _tradeService = TradeService();
 
   final TradeRulesService _tradeRulesService = TradeRulesService();
   final SettingsService _settingsService = SettingsService();
 
 double _targetR = 3.0;
+bool _showOnlyActiveTrades = true;
 
   List<TradeModel> _trades = [];
 
@@ -93,6 +197,10 @@ double _targetR = 3.0;
 
     _loadTrades();
   }
+
+  Future<void> refreshTrades() async {
+  await _loadTrades();
+}
 
   // ===========================================================
   // LOAD TRADES
@@ -239,6 +347,7 @@ final settings = await _settingsService.getSettings();
     setState(() {
       _trades = trades;
   _targetR = settings.targetR;
+   _showOnlyActiveTrades = settings.showOnlyActiveTrades;
       _bookedQuantities
         ..clear()
         ..addAll(bookedQuantities);
@@ -374,12 +483,13 @@ final settings = await _settingsService.getSettings();
       return;
     }
 
-    await showModalBottomSheet<void>(
+    final shouldUpdateTrailingSL = await showModalBottomSheet<bool>(
       context: context,
       builder: (context) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
                 title: Text(
@@ -402,6 +512,19 @@ final settings = await _settingsService.getSettings();
                   editTrade(trade);
                 },
               ),
+
+              // UPDATE TRAILING SL
+              if (trade.status == TradeStatus.active)
+                ListTile(
+                  leading: const Icon(Icons.tune),
+                  title: const Text('Update Trailing SL'),
+                  subtitle: Text(
+                    'Current: ${trade.stopLoss.toStringAsFixed(2)}',
+                  ),
+                  onTap: () {
+                    Navigator.of(context).pop(true);
+                  },
+                ),
 
               // PARTIAL BOOK
               if (trade.status == TradeStatus.active)
@@ -504,9 +627,70 @@ final settings = await _settingsService.getSettings();
               const SizedBox(height: 8),
             ],
           ),
+          ),
         );
       },
     );
+
+    // Wait until the bottom sheet route has completely closed before
+    // opening the Trailing SL dialog. This avoids overlapping route
+    // transitions on Android.
+    if (shouldUpdateTrailingSL == true && mounted) {
+      await updateTrailingSL(trade);
+    }
+  }
+
+  // ===========================================================
+  // UPDATE TRAILING SL
+  // ===========================================================
+
+  Future<void> updateTrailingSL(TradeModel trade) async {
+    final updatedStopLoss = await showDialog<double>(
+      context: context,
+      builder: (_) => _UpdateTrailingSLDialog(trade: trade),
+    );
+
+    if (updatedStopLoss == null ||
+        updatedStopLoss == trade.stopLoss ||
+        !mounted) {
+      return;
+    }
+
+    try {
+      // This is a direct Trailing SL update. It intentionally does not
+      // run the new-trade or portfolio-risk rule checks.
+      final updatedTrade = trade.copyWith(
+        stopLoss: updatedStopLoss,
+      );
+
+      await _tradeService.updateTrade(updatedTrade);
+
+      if (!mounted) {
+        return;
+      }
+
+      await _loadTrades();
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Trailing SL updated successfully'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not update Trailing SL: $error'),
+        ),
+      );
+    }
   }
 
   // ===========================================================
@@ -953,8 +1137,14 @@ Future<void> showPartialBookDialog(TradeModel trade) async {
       );
     }
 
-    final totalItems =
-        _trades.length + _availableTradeSlots;
+   final visibleTrades = _showOnlyActiveTrades
+    ? _trades
+        .where((trade) => trade.status == TradeStatus.active)
+        .toList()
+    : _trades;
+
+final totalItems =
+    visibleTrades.length + _availableTradeSlots;
 
     return Scaffold(
       appBar: AppBar(
@@ -983,8 +1173,8 @@ Future<void> showPartialBookDialog(TradeModel trade) async {
                     const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   // EXISTING TRADE
-                  if (index < _trades.length) {
-                    final trade = _trades[index];
+                 if (index < visibleTrades.length) {
+  final trade = visibleTrades[index];
 
                     final bookedQuantity =
                         _getBookedQuantity(trade);

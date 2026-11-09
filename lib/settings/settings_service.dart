@@ -1,3 +1,4 @@
+
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,31 +9,23 @@ class SettingsService {
   static const String _storageKey = 'tradedesk-settings';
 
   static const SettingsModel _defaultSettings = SettingsModel(
-    maxActiveTrades: 6,
+    maxActiveTrades: 10,
     maxTradesPerMonth: 3,
     maxTradesPerThreeMonths: 6,
-    maxRiskPerTrade: 15000,
+    maxRiskPerTrade: 10000,
     maxRiskPercentPerTrade: 8,
-    maxInvestmentPerTrade: 300000,
-    totalInvestment: 2000000,
-    maxPortfolioRiskPercent: 3,
+    maxInvestmentPerTrade: 100000,
+    totalInvestment: 1000000,
+    maxPortfolioRiskPercent: 6,
     targetR: 3.0,
+    showOnlyActiveTrades: true,
   );
 
   /// Loads settings from local storage.
-  ///
-  /// If no settings are saved, default settings are returned.
-  ///
-  /// If saved JSON is invalid, default settings are returned.
-  ///
-  /// Missing individual values fall back to their defaults,
-  /// matching the merge behavior of the Ionic V1 service.
   Future<SettingsModel> getSettings() async {
-    final preferences =
-        await SharedPreferences.getInstance();
+    final preferences = await SharedPreferences.getInstance();
 
-    final savedSettings =
-        preferences.getString(_storageKey);
+    final savedSettings = preferences.getString(_storageKey);
 
     if (savedSettings == null) {
       return _defaultSettings;
@@ -91,18 +84,47 @@ class SettingsService {
           'targetR',
           _defaultSettings.targetR,
         ),
+        showOnlyActiveTrades:
+            (decoded['showOnlyActiveTrades'] as bool?) ??
+                _defaultSettings.showOnlyActiveTrades,
       );
     } catch (_) {
       return _defaultSettings;
     }
   }
 
-  /// Saves settings to local storage.
-  Future<void> saveSettings(
-    SettingsModel settings,
-  ) async {
-    final preferences =
-        await SharedPreferences.getInstance();
+  /// Saves only the Show Only Active Trades toggle.
+  /// Other unsaved settings remain untouched.
+  Future<void> saveShowOnlyActiveTrades(bool value) async {
+    final preferences = await SharedPreferences.getInstance();
+
+    final savedSettings = preferences.getString(_storageKey);
+
+    Map<String, dynamic> settingsJson = {};
+
+    if (savedSettings != null) {
+      try {
+        final decoded = jsonDecode(savedSettings);
+
+        if (decoded is Map<String, dynamic>) {
+          settingsJson = decoded;
+        }
+      } catch (_) {
+        // Keep an empty map if saved settings are invalid.
+      }
+    }
+
+    settingsJson['showOnlyActiveTrades'] = value;
+
+    await preferences.setString(
+      _storageKey,
+      jsonEncode(settingsJson),
+    );
+  }
+
+  /// Saves all settings.
+  Future<void> saveSettings(SettingsModel settings) async {
+    final preferences = await SharedPreferences.getInstance();
 
     await preferences.setString(
       _storageKey,

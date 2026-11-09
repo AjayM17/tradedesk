@@ -16,12 +16,23 @@ class TabsShell extends StatefulWidget {
 class _TabsShellState extends State<TabsShell> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [
-    DashboardPage(),
-    TradesPage(),
-    WatchlistPage(),
-    SettingsPage(),
+late final GlobalKey<TradesPageState> _tradesPageKey;
+
+late final List<Widget> _pages;
+
+@override
+void initState() {
+  super.initState();
+
+  _tradesPageKey = GlobalKey<TradesPageState>();
+
+  _pages = [
+    const DashboardPage(),
+    TradesPage(key: _tradesPageKey),
+    const WatchlistPage(),
+    const SettingsPage(),
   ];
+}
 
   @override
   Widget build(BuildContext context) {
@@ -32,11 +43,15 @@ class _TabsShellState extends State<TabsShell> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+    onDestinationSelected: (index) {
+  setState(() {
+    _currentIndex = index;
+  });
+
+  if (index == 1) {
+    _tradesPageKey.currentState?.refreshTrades();
+  }
+},
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
